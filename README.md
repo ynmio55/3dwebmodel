@@ -1,4 +1,4 @@
-# Amore — interactive 3D heart studio
+# noomo — The Story 3D heart prototype
 
 A browser-based interpretation of the supplied video, with a STORY opening, Roman-inspired scene transitions, a marble-and-columns backdrop, and a customizable faceted heart. The heart mesh is generated and shaded in Canvas without JavaScript dependencies.
 
