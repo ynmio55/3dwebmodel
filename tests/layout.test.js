@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chapterProgress, stageViewport } from '../layout.js';
+import { chapterProgress, stageViewport, usesBottomDock } from '../layout.js';
+
+test('short portrait screens keep the bottom dock; short landscape uses a side panel',()=>{
+ assert.equal(usesBottomDock(390,500),true);
+ assert.equal(usesBottomDock(500,500),true);
+ assert.equal(usesBottomDock(667,375),false);
+ assert.equal(usesBottomDock(390,844),true);
+ assert.equal(usesBottomDock(768,1024),false);
+});
 
 test('chapter tracking uses real offsets when sections have different heights',()=>{
  const offsets=[0,560,1120,1740,2360];
