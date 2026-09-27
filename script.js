@@ -100,12 +100,18 @@ async function loadUserModels(){
  const tree=await loader.loadAsync(baseUrl+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){
-  const isTreeStar=/star/i.test(o.name||'');
-  o.material=new THREE.MeshStandardMaterial({
-   color:isTreeStar?0xd4aa4f:0x496f5d,
-   roughness:isTreeStar?.38:.82,
-   metalness:isTreeStar?.18:.02
-  });
+  const name=(o.name||'').toLowerCase();
+  const sourceMat=Array.isArray(o.material)?o.material[0]:o.material;
+  let mat=sourceMat&&sourceMat.isMaterial?sourceMat.clone():new THREE.MeshStandardMaterial({color:0xffffff,roughness:.8,metalness:.02});
+
+  if(name.includes('star')){
+   mat=new THREE.MeshStandardMaterial({color:0xd4aa4f,roughness:.38,metalness:.18});
+  }else{
+   if('roughness' in mat)mat.roughness=Math.max(mat.roughness??.6,.72);
+   if('metalness' in mat)mat.metalness=Math.min(mat.metalness??0,.04);
+  }
+
+  o.material=mat;
   o.castShadow=true;o.receiveShadow=true;
  }});
  modelGroups[3].add(root);letter.visible=false;
