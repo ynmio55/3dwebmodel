@@ -134,7 +134,12 @@ function populateWorld(){
   const group=new THREE.Group();
   group.position.set(sceneOffsets[i],0,-i*sceneSpacing);
   scene.add(group);modelGroups.push(group);
-  column(group,-4.8,-2.2,i===4?4.8:5.3);column(group,4.7,-1.4,i===4?2.7:4.7,true);column(group,-3.6,-7.2,3.2,true);column(group,3.9,-9.1,5.0);island(group,i===4?1.8:2.3);
+  // Keep foreground sight-lines open so columns frame the scene instead of blocking it.
+  column(group,-6.2,-3.2,i===4?4.8:5.3);
+  column(group,6.0,-3.0,i===4?2.7:4.7,true);
+  column(group,-5.4,-9.0,3.2,true);
+  column(group,5.2,-10.2,5.0);
+  island(group,i===4?1.8:2.3);
  }
  mirrorGroup=makeMirror(modelGroups[0]);cage=new THREE.Group();modelGroups[2].add(cage);
  letter=new THREE.Group();letter.position.set(0,2.1,0);modelGroups[3].add(letter);
