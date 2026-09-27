@@ -1,24 +1,47 @@
-# noomo — The Story 3D heart prototype
+# The Story — Interactive 3D Heart
 
-A browser-based interpretation of the supplied video, with a STORY opening, Roman-inspired scene transitions, a marble-and-columns backdrop, and a customizable faceted heart. The heart mesh is generated and shaded in Canvas without JavaScript dependencies.
+เว็บเล่าเรื่องและปรับแต่งหัวใจ 3D สร้างด้วย Three.js/WebGL อ้างอิงทิศทางภาพจากคลิป Noomo ValenTime ที่ผู้ใช้ส่งมา โมเดลและพื้นผิวในโปรเจกต์นี้สร้างด้วยโค้ด ไม่ใช่ไฟล์ต้นฉบับของ Noomo และไม่ใช่เว็บไซต์ทางการของ Noomo
 
-## Run
+## เปิดใช้งาน (Windows / Linux)
 
-Open `index.html` directly in a modern browser, or serve it locally:
+ติดตั้ง Node.js 20.19+ หรือ 22.12+ ก่อน จากนั้น:
 
 ```sh
-python3 -m http.server 8000
+git clone https://github.com/ynmio55/3dwebmodel.git
+cd 3dwebmodel
+npm install
+npm run dev
 ```
 
-Then open <http://localhost:8000>. Google Fonts are optional; the page falls back to local fonts if offline.
+เปิด URL ที่ terminal แสดง ปกติคือ http://127.0.0.1:5173
 
-## Features
+ถ้ามีโปรเจกต์อยู่แล้ว ใช้ `git pull origin main` แล้ว `npm install` และ `npm run dev`
 
-- Drag or touch to rotate a heart rendered on Canvas.
-- Choose from eight materials, colors, frames, and sticker effects.
-- Follow the opening and story scenes into the full-screen design studio.
-- Toggle a quiet synthesized ambient chord from the sound control.
-- Save a PNG image or share a URL that restores the selected design.
-- Responsive desktop and mobile layout; no account or backend required.
+## Build
 
-This is a visual prototype based on the provided screen recording. The recording does not provide the original site's source code, 3D models, textures, music, or animation assets, so those elements are recreated rather than extracted.
+```sh
+npm run build
+npm run preview
+```
+
+โฟลเดอร์ `dist` เป็นไฟล์สำหรับ static hosting ต้องเปิดผ่าน HTTP/HTTPS; อย่าดับเบิลคลิก index.html โดยตรง
+
+## สิ่งที่ทำได้
+
+- ฉาก 3D ต่อเนื่องห้าช่วง กล้องเคลื่อนตามการเลื่อนหน้าเว็บ
+- กระจกวงรีพร้อมลายทองและหัวใจหมุน ชิ้นส่วนแตกกระจายเมื่อเริ่มเรื่อง
+- เสาเซาะร่อง แท่นหิน รูปปั้นนามธรรม กรง จดหมาย และกลีบกุหลาบ 3D
+- พื้นสะท้อนฉาก แสง เงา และหมอก
+- หัวใจเลือกวัสดุ สี กรอบ และเครื่องประดับ หมุนด้วยเมาส์/สัมผัส หรือปุ่มลูกศรเมื่อโฟกัส canvas
+- กรอบตาข่ายทอง/เงิน ไข่มุก ขอบทอง และมงกุฎ
+- บันทึกภาพ PNG และคัดลอกลิงก์ที่เก็บแบบหัวใจ (ผู้รับต้องเข้าถึง URL ที่โฮสต์เดียวกันได้)
+- เปิด/ปิดเสียงบรรยากาศสังเคราะห์หลังผู้ใช้กดปุ่ม
+- ลดความละเอียดการเรนเดอร์บนจอเล็ก และหยุดวาดเมื่อซ่อนแท็บ
+
+## สถานะและข้อจำกัด
+
+โมเดลประกอบถูกสร้างขึ้นใหม่ จึงยังไม่เหมือนต้นฉบับทุกส่วน โดยเฉพาะประติมากรรม ลายกรอบ และรายละเอียดวัสดุ ต้องตรวจภาพบนอุปกรณ์จริงก่อนนำไปเสนอลูกค้า
+
+ตรวจ build production และข้อมูล geometry แล้ว แต่ในสภาพแวดล้อมพัฒนาครั้งนี้ นโยบายเบราว์เซอร์ไม่อนุญาตเปิด localhost/file URL จึงยังไม่ได้ยืนยันหน้าตาและการกดใช้งานจากเบราว์เซอร์จริง
+
+ต้องใช้เบราว์เซอร์ที่รองรับ WebGL2 และเปิด hardware acceleration ฟอนต์ Google Fonts มีฟอนต์สำรองกรณีโหลดไม่ได้
