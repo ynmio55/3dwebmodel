@@ -270,8 +270,13 @@ async function start(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0xa5b0bd);scene.fog=new THREE.Fog(0xa5b0bd,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
  scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=0.0001;sun.shadow.normalBias=0.02;scene.add(sun);scene.add(sun.target);
- const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?512:1024,textureHeight:width<700?512:1024,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
- const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;haze.castShadow=false;
+ const reflectionSize=width<700?1024:2048;
+ const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xc7d0da,textureWidth:reflectionSize,textureHeight:reflectionSize,clipBias:.01});
+ floor.rotation.x=-Math.PI/2;floor.position.set(0,-.14,-44);floor.renderOrder=-2;
+ floor.material.transparent=true;floor.material.opacity=.28;floor.material.depthWrite=false;
+ scene.add(floor);
+ const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshBasicMaterial({color:0xf3f1ee,transparent:true,opacity:.72,depthWrite:false,depthTest:true}),scene,0,-.06,-44);
+ haze.rotation.x=-Math.PI/2;haze.castShadow=false;haze.receiveShadow=false;haze.renderOrder=2;
  populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:crystalMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
