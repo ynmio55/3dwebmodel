@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const $ = s => document.querySelector(s);
@@ -69,7 +68,9 @@ function makeMirror(parent){
  for(let side of [-1,1])for(let j=0;j<9;j++){const a=-.9+j*.23;leaf(g,side*(.72+Math.sin(a)*.37),1.42+Math.cos(a)*.30,.07,side*(a-.6),.18);leaf(g,side*(.65+Math.sin(a)*.35),-1.52-Math.cos(a)*.18,.07,side*(a+2),.16);}
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;leaf(g,Math.cos(a)*.20,1.93+Math.sin(a)*.20,.05,-a+Math.PI/2,.19);}sphere(g,0,1.93,.1,.11,.11,.08,gold);
  const ornament=mesh(new THREE.TorusKnotGeometry(.21,.026,64,8,2,3),gold,g,0,-1.96,.08);ornament.scale.set(1,.65,.25);
- introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xd8bd93,metalness:.65,roughness:.27,clearcoat:1}),g,0,0,.25);introHeart.scale.setScalar(.61);
+ introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xe6c97f,metalness:.42,roughness:.18,clearcoat:1,clearcoatRoughness:.08}),g,0,.08,.32);
+ introHeart.scale.setScalar(.68);
+ introHeart.castShadow=false;
  return g;
 }
 let sculptureReady;
@@ -100,15 +101,58 @@ async function loadUserModels(){
  });
  const tree=await loader.loadAsync(baseUrl+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
- root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
- modelGroups[3].add(root);letter.visible=false;
- floatingStar(modelGroups[3],0,3.45,0,0xefbe55,.38);
+ root.traverse(o=>{if(o.isMesh){
+  const geom=o.geometry;
+  if(geom?.attributes?.position){
+   geom.computeBoundingBox();
+   const b=geom.boundingBox;
+   const size=b.getSize(new THREE.Vector3());
+   const midX=(b.min.x+b.max.x)*.5, midZ=(b.min.z+b.max.z)*.5;
+   const trunkRadius=Math.max(size.x,size.z)*.085;
+   const trunkTop=b.min.y+size.y*.72;
+   const pos=geom.attributes.position;
+   const colors=new Float32Array(pos.count*3);
+   const leafColor=new THREE.Color(0x4f7a67);
+   const trunkColor=new THREE.Color(0x8a6848);
+   for(let i=0;i<pos.count;i++){
+    const dx=pos.getX(i)-midX,dz=pos.getZ(i)-midZ,y=pos.getY(i);
+    const isTrunk=(dx*dx+dz*dz)<trunkRadius*trunkRadius && y<trunkTop;
+    const col=isTrunk?trunkColor:leafColor;
+    colors[i*3]=col.r;colors[i*3+1]=col.g;colors[i*3+2]=col.b;
+   }
+   geom.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  }
+  o.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,metalness:.02});
+  o.castShadow=true;o.receiveShadow=true;
+ }}); modelGroups[3].add(root);letter.visible=false;
+ floatingStar(modelGroups[3],0,3.45,0,0xd4aa4f,.38);
  for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
+ introHeart.material.color.set(0xe6c97f);
+ introHeart.material.metalness=.46;
+ introHeart.material.roughness=.16;
+ introHeart.material.clearcoat=1;
+ introHeart.material.clearcoatRoughness=.06;
+ introHeart.material.transmission=.05;
+ introHeart.material.thickness=.35;
+ introHeart.material.envMapIntensity=2;
+ introHeart.material.emissive.set(0x5a3b08);
+ introHeart.material.emissiveIntensity=.035;
+ introHeart.material.needsUpdate=true;
 }
 function populateWorld(){
  heartGeometry=facetedStar();facetGeometry=heartGeometry;
- for(let i=0;i<5;i++){const group=new THREE.Group();group.position.z=-i*22;scene.add(group);modelGroups.push(group);
- column(group,-4.1,-1.7,i===4?4.8:5.3);column(group,4.0,-1.0,i===4?2.7:4.7,true);column(group,-2.8,-6,3.2,true);column(group,3.1,-8,5.0);island(group,i===4?1.8:2.3);
+ const sceneSpacing=30;
+ const sceneOffsets=[0,-3.4,3.6,-3.5,0];
+ for(let i=0;i<5;i++){
+  const group=new THREE.Group();
+  group.position.set(sceneOffsets[i],0,-i*sceneSpacing);
+  scene.add(group);modelGroups.push(group);
+  // Keep foreground sight-lines open so columns frame the scene instead of blocking it.
+  column(group,-6.2,-3.2,i===4?4.8:5.3);
+  column(group,6.0,-3.0,i===4?2.7:4.7,true);
+  column(group,-5.4,-9.0,3.2,true);
+  column(group,5.2,-10.2,5.0);
+  island(group,i===4?1.8:2.3);
  }
  mirrorGroup=makeMirror(modelGroups[0]);cage=new THREE.Group();modelGroups[2].add(cage);
  letter=new THREE.Group();letter.position.set(0,2.1,0);modelGroups[3].add(letter);
@@ -249,29 +293,98 @@ function resize(){width=innerWidth;height=innerHeight;camera.aspect=width/height
 function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your star.',out.width/2,out.height*.92);out.toBlob(blob=>{$('#download').disabled=false;if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-tha-rae-star.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your star image is ready.';},'image/png');}
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
- smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
- const x=0, travel=smoothProgress*22, studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
- const distance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- camera.position.set(x,3.05,distance-travel);camera.lookAt(x,2.65,-travel);
- scene.fog.near=distance+1;scene.fog.far=distance+23;
+
+ smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:4.6,dt);
+
+ const sceneSpacing=30;
+ const travel=smoothProgress*sceneSpacing;
+ const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
+ const storyBlend=THREE.MathUtils.smoothstep(smoothProgress,.18,.72);
+
+ // Wide gallery layout: scenes alternate left/right while the camera uses the
+ // opposite lane, so it passes diagonally beside each model instead of through it.
+ const sceneX=[0,-3.4,3.6,-3.5,0];
+ const cameraLane=[0,2.25,-2.35,2.25,0];
+
+ const samplePath=(values,p)=>{
+  const max=values.length-1;
+  const i=Math.floor(clamp(p,0,max));
+  if(i>=max)return values[max];
+  const t=THREE.MathUtils.smootherstep(p-i,0,1);
+  return THREE.MathUtils.lerp(values[i],values[i+1],t);
+ };
+
+ const storyCamX=samplePath(cameraLane,smoothProgress);
+ const focusX=samplePath(sceneX,smoothProgress);
+
+ // Keep HOME exactly centered, then lower the viewpoint into a human-height
+ // walk-through path. Return to the original height for the design studio.
+ const walkingY=width<700?2.05:1.9;
+ const storyY=THREE.MathUtils.lerp(walkingY,3.05,studioBlend);
+ const targetX=THREE.MathUtils.lerp(0,storyCamX,storyBlend);
+ const targetY=THREE.MathUtils.lerp(3.05,storyY,storyBlend);
+
+ const homeDistance=width<700?13.5:10.4;
+ const walkDistance=width<700?12.4:10.8;
+ const baseDistance=THREE.MathUtils.lerp(homeDistance,walkDistance,storyBlend);
+ const finalDistance=THREE.MathUtils.lerp(baseDistance,stageLayout.distance,studioBlend);
+ const targetZ=finalDistance-travel;
+
+ camera.position.x=THREE.MathUtils.damp(camera.position.x,targetX,4.8,dt);
+ camera.position.y=THREE.MathUtils.damp(camera.position.y,targetY,4.8,dt);
+ camera.position.z=THREE.MathUtils.damp(camera.position.z,targetZ,6.0,dt);
+
+ // Look across the path toward the featured scene. A small forward lead keeps
+ // the movement flowing and prevents the camera from staring backwards.
+ const lookX=THREE.MathUtils.lerp(0,focusX*.82,storyBlend)*(1-studioBlend);
+ const lookY=THREE.MathUtils.lerp(2.65,width<700?2.25:2.3,storyBlend);
+ const lookAhead=THREE.MathUtils.lerp(0,2.2,storyBlend)*(1-studioBlend);
+ camera.lookAt(lookX,THREE.MathUtils.lerp(lookY,2.65,studioBlend),-travel-lookAhead);
+
+ camera.fov=THREE.MathUtils.damp(camera.fov,39,5,dt);
+ camera.updateProjectionMatrix();
+
+ scene.fog.near=finalDistance+2;scene.fog.far=finalDistance+36;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
- sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
+ sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(focusX,0,-travel);
+
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
  for(const s of mirrorShards){s.mesh.visible=burst>.03&&burst<.99;s.mesh.position.set(s.x+Math.sin(s.phase)*burst*3,s.y+Math.cos(s.phase)*burst*2,s.z+burst*4);s.mesh.rotation.set(burst*s.phase,burst*s.phase*.6,burst);}
  for(const p of petals){p.mesh.visible=studioBlend<.8;p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
- for(let i=0;i<modelGroups.length;i++)modelGroups[i].visible=Math.abs(smoothProgress-i)<1.15;
+
+ for(let i=0;i<modelGroups.length;i++){
+  const delta=Math.abs(smoothProgress-i);
+  modelGroups[i].visible=delta<1.7;
+  if(modelGroups[i].visible){
+   const current=modelGroups[i].scale.x||1;
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,1,4,dt));
+  }
+ }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
 }
+
 async function start(){
  try{
  renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xa5b0bd);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0xa5b0bd);scene.fog=new THREE.Fog(0xa5b0bd,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
  scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=0.0001;sun.shadow.normalBias=0.02;scene.add(sun);scene.add(sun.target);
- const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?512:1024,textureHeight:width<700?512:1024,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
- const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;haze.castShadow=false;
+ const floor=mesh(
+  new THREE.PlaneGeometry(200,140),
+  new THREE.MeshStandardMaterial({
+   color:0xdfe4e9,
+   roughness:.78,
+   metalness:0,
+   transparent:true,
+   opacity:.96
+  }),
+  scene,0,-.12,-44
+ );
+ floor.rotation.x=-Math.PI/2;floor.castShadow=false;floor.receiveShadow=true;floor.renderOrder=-2;
+ const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshBasicMaterial({color:0xf6f3ef,transparent:true,opacity:.34,depthWrite:false,depthTest:true}),scene,0,-.045,-44);
+ haze.rotation.x=-Math.PI/2;haze.castShadow=false;haze.receiveShadow=false;haze.renderOrder=2;
  populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:crystalMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
