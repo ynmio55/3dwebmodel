@@ -3,12 +3,12 @@ const canvas = $('#heartCanvas');
 const ctx = canvas.getContext('2d', { alpha: true });
 const state = { category: 'material', material: 0, color: 0, frame: 0, sparkle: 0, rotX: -0.13, rotY: 0.24 };
 const choices = {
-  material: [{ name: 'PORCELAIN', value: '#f8e9e4' }, { name: 'ROSE MARBLE', value: '#d595ad' }, { name: 'VELVET', value: '#aa254d' }, { name: 'GOLD LEAF', value: '#d4a951' }],
+  material: [{ name: 'PORCELAIN', value: '#e5ded5' }, { name: 'BLUE STONE', value: '#a9b3cc' }, { name: 'SEA GLASS', value: '#8dc1b7' }, { name: 'ROSE MARBLE', value: '#db8da8' }, { name: 'CRYSTAL', value: '#cfb8bd' }, { name: 'JADE', value: '#c8d4bc' }, { name: 'SILVER', value: '#cbd0d6' }, { name: 'PEARL', value: '#e6ded6' }],
   color: [{ name: 'BLUSH', value: '#e8a5aa' }, { name: 'ROSE', value: '#cb315e' }, { name: 'WINE', value: '#81233e' }, { name: 'LILAC', value: '#c6aacd' }, { name: 'SEA GLASS', value: '#8cbeba' }, { name: 'PEARL', value: '#f5e9d9' }, { name: 'MIDNIGHT', value: '#42405e' }, { name: 'GOLD', value: '#d3aa69' }],
-  frame: [{ name: 'PURE', icon: '♡' }, { name: 'GOLD THREAD', icon: '♧' }, { name: 'PEARL TRIM', icon: '❀' }, { name: 'GILDED', icon: '✧' }],
-  sparkle: [{ name: 'SOFT GLOW', icon: '✧' }, { name: 'STARDUST', icon: '✳' }, { name: 'DIAMOND', icon: '◇' }, { name: 'NO SPARKLE', icon: '○' }]
+  frame: [{ name: 'PURE', icon: '♡' }, { name: 'GOLD THREAD', icon: '♧' }, { name: 'PEARL TRIM', icon: '❀' }, { name: 'GILDED', icon: '✧' }, { name: 'CROWN', icon: '♕' }, { name: 'ANGEL', icon: '❦' }, { name: 'HALO', icon: '☼' }, { name: 'LATTICE', icon: '◇' }],
+  sparkle: [{ name: 'SOFT GLOW', icon: '✧' }, { name: 'STARDUST', icon: '✳' }, { name: 'DIAMOND', icon: '◇' }, { name: 'NO STICKERS', icon: '○' }, { name: 'FLORAL', icon: '❀' }, { name: 'BUTTERFLY', icon: '❦' }, { name: 'STARS', icon: '★' }, { name: 'MOONLIGHT', icon: '☾' }]
 };
-const labels = { material: 'CHOOSE A MATERIAL', color: 'FIND YOUR COLOR', frame: 'ADD A FRAME', sparkle: 'THE FINISHING TOUCH' };
+const labels = { material: 'CHOOSE A MATERIAL', color: 'FIND YOUR COLOR', frame: 'ADD A FRAME', sparkle: 'CHOOSE STICKERS' };
 const N = 72;
 const rings = [0.001, 0.24, 0.47, 0.68, 0.85, 0.96, 1];
 const vertices = [];
@@ -37,7 +37,7 @@ function hexRGB(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 function shade(hex,light,alpha=1){const c=hexRGB(hex);return `rgba(${c.map(v=>Math.round(Math.max(0,Math.min(255,mix(v,255,Math.max(0,light))*(1+Math.min(0,light)))))).join(',')},${alpha})`;}
 let width=0,height=0,dpr=1,frameScheduled=false;
 function resize(){const box=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);render();}
-function project(v){const depth=3.9-v[2],s=Math.min(width*.38,height*.39);return [width/2+v[0]*s*3.9/depth,height*.48-v[1]*s*3.9/depth];}
+function project(v){const depth=3.9-v[2],s=Math.min(width*.23,height*.31);return [width/2+v[0]*s*3.9/depth,height*.48-v[1]*s*3.9/depth];}
 function schedule(){if(!frameScheduled){frameScheduled=true;requestAnimationFrame(()=>{frameScheduled=false;render();});}}
 function drawLine(points, color, size, close=false){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));if(close)ctx.closePath();ctx.strokeStyle=color;ctx.lineWidth=size;ctx.lineJoin='round';ctx.stroke();}
 function render(){
@@ -45,26 +45,30 @@ function render(){
   ctx.clearRect(0,0,width,height);
   const pts=vertices.map(rotate), screen=pts.map(project);
   const shadow=ctx.createRadialGradient(width/2,height*.85,0,width/2,height*.85,width*.33);shadow.addColorStop(0,'#81677447');shadow.addColorStop(1,'#81677400');ctx.fillStyle=shadow;ctx.beginPath();ctx.ellipse(width/2,height*.85,width*.33,height*.055,0,0,Math.PI*2);ctx.fill();
-  const base=state.material===3?'#d8ab5d':state.color===0&&state.material===0?'#f3dada':choices.color[state.color].value;
+  const base=state.color===0?choices.material[state.material].value:choices.color[state.color].value;
   const sorted=faces.map(face=>({face,z:(pts[face[0]][2]+pts[face[1]][2]+pts[face[2]][2])/3})).sort((a,b)=>a.z-b.z);
   for(const {face} of sorted){
     const [a,b,c]=face.map(i=>pts[i]), u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
     const nx=u[1]*v[2]-u[2]*v[1],ny=u[2]*v[0]-u[0]*v[2],nz=u[0]*v[1]-u[1]*v[0],len=Math.hypot(nx,ny,nz)||1;
     const lit=Math.abs((nx*.42+ny*.63+nz*.78)/len), pos=(a[0]+b[0]+c[0])/3;
     let intensity=(lit-.51)*.75+(pos<-.1?-.07:.03);
-    if(state.material===1) intensity+=Math.sin((a[0]*8+a[1]*6+a[2]*4))*Math.sin(a[1]*13+a[0]*4)*.12;
-    if(state.material===2) intensity*=.62;
-    if(state.material===3) intensity+=Math.sin(pos*9+a[1]*8)*.06;
+    if(state.material===3||state.material===4) intensity+=Math.sin((a[0]*8+a[1]*6+a[2]*4))*Math.sin(a[1]*13+a[0]*4)*.13;
+    if(state.material===6) intensity+=Math.sin(pos*9+a[1]*8)*.09;
     const [p,q,r]=face.map(i=>screen[i]);
     ctx.beginPath();ctx.moveTo(...p);ctx.lineTo(...q);ctx.lineTo(...r);ctx.closePath();ctx.fillStyle=shade(base,intensity);ctx.fill();
   }
   const contour=Array.from({length:N},(_,i)=>project(rotate(vertices[frontEnd+i])));
-  if(state.frame===1||state.frame===3){drawLine(contour,state.frame===1?'#bd995c':'#e8c484',state.frame===1?2.8:5,true);if(state.frame===3)drawLine(contour,'#fff5cfb0',1,true);}
+  if([1,3,4,7].includes(state.frame)){
+    drawLine(contour,'#c4a369',state.frame===3?4:2,true);
+    if(state.frame===1||state.frame===7){
+      const ring=frontEnd-N;for(let i=0;i<N;i+=6){const a=screen[ring+i],b=screen[ring+(i+13)%N],c=screen[frontEnd+(i+5)%N];drawLine([a,b,c],'#cbae6dba',1.35);}
+    }
+    if(state.frame===3)drawLine(contour,'#fff5cfb0',1,true);
+  }
   if(state.frame===2){for(let i=0;i<N;i+=3){const p=contour[i];ctx.beginPath();ctx.arc(p[0],p[1],Math.max(2,width*.005),0,Math.PI*2);ctx.fillStyle='#fff9ef';ctx.fill();ctx.strokeStyle='#c8b6a8';ctx.lineWidth=.7;ctx.stroke();}}
-  if(state.sparkle!==3){const count=[4,22,10][state.sparkle];for(let i=0;i<count;i++){const x=Math.sin(i*79.3)*.68,y=Math.cos(i*41.7)*.62,z=.57;const p=project(rotate([x,y,z]));const r=state.sparkle===2?3+i%3:1+i%4;ctx.fillStyle=state.sparkle===2?'#fff8dbb9':'#fff8eda6';ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();if(state.sparkle===2&&i%2===0){drawLine([[p[0]-8,p[1]],[p[0]+8,p[1]]],'#fff8dba1',1);drawLine([[p[0],p[1]-8],[p[0],p[1]+8]],'#fff8dba1',1);}}}
+  if(state.sparkle!==3){const count=[4,22,10,0,12,8,16,6][state.sparkle];for(let i=0;i<count;i++){const x=Math.sin(i*79.3)*.68,y=Math.cos(i*41.7)*.62,z=.57;const p=project(rotate([x,y,z]));const r=state.sparkle===2?3+i%3:1+i%4;ctx.fillStyle=state.sparkle===2?'#fff8dbb9':'#fff8eda6';ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();if((state.sparkle===2||state.sparkle===6)&&i%2===0){drawLine([[p[0]-8,p[1]],[p[0]+8,p[1]]],'#fff8dba1',1);drawLine([[p[0],p[1]-8],[p[0],p[1]+8]],'#fff8dba1',1);}}}
 }
 function renderOptions(){
-  $('#optionsLabel').textContent=labels[state.category];
   $('#selectionName').textContent=choices[state.category][state[state.category]].name;
   const grid=$('#optionGrid');grid.replaceChildren();
   choices[state.category].forEach((item,index)=>{
@@ -74,7 +78,23 @@ function renderOptions(){
   });
 }
 document.querySelectorAll('.category').forEach(button=>button.addEventListener('click',()=>{state.category=button.dataset.category;document.querySelectorAll('.category').forEach(b=>b.classList.toggle('active',b===button));renderOptions();}));
-for(const id of ['begin','storyBegin'])$('#'+id).addEventListener('click',()=>$('#create').scrollIntoView({behavior:'smooth'}));
+$('#begin').addEventListener('click',()=>$('#story').scrollIntoView({behavior:'smooth'}));
+$('#nextStory').addEventListener('click',()=>$('.interlude').scrollIntoView({behavior:'smooth'}));
+$('#enterStudio').addEventListener('click',()=>$('#create').scrollIntoView({behavior:'smooth'}));
+let ambient;
+$('#sound').addEventListener('click',async()=>{
+  const button=$('#sound');
+  if(!ambient){
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass){button.setAttribute('aria-label','Sound unavailable in this browser');return;}
+    const audioContext=new AudioContextClass(),gain=audioContext.createGain();
+    gain.gain.value=.008;gain.connect(audioContext.destination);
+    [174.61,261.63,349.23].forEach(frequency=>{const oscillator=audioContext.createOscillator();oscillator.type='sine';oscillator.frequency.value=frequency;oscillator.connect(gain);oscillator.start();});
+    ambient={audioContext,gain,playing:true};
+  }else if(ambient.playing){await ambient.audioContext.suspend();ambient.playing=false;}
+  else{await ambient.audioContext.resume();ambient.playing=true;}
+  button.textContent=ambient.playing?'✕':'⌁';button.setAttribute('aria-label',ambient.playing?'Turn sound off':'Turn sound on');
+});
 let dragging=false,lastX=0,lastY=0;
 canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(!dragging)return;state.rotY+=(e.clientX-lastX)*.009;state.rotX=Math.max(-1.1,Math.min(1.1,state.rotX+(e.clientY-lastY)*.007));lastX=e.clientX;lastY=e.clientY;schedule();});
