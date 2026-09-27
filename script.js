@@ -91,13 +91,14 @@ function makeCage(parent){
 }
 async function loadUserModels(){
  const loader=new GLTFLoader();
- const storyModels=await Promise.all(['scene-two','scene-three'].map(name=>loader.loadAsync(import.meta.env.BASE_URL+'models/'+name+'.glb')));
+ const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || './';
+ const storyModels=await Promise.all(['scene-two','scene-three'].map(name=>loader.loadAsync(baseUrl+'models/'+name+'.glb')));
  storyModels.forEach((gltf,i)=>{
   const root=gltf.scene;root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(Math.min(4.5/size.x,3.5/size.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.16-box.min.y,-center.z);
   root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.78,metalness:0});o.castShadow=true;o.receiveShadow=true;}});
   modelGroups[i+1].add(root);floatingStar(modelGroups[i+1],i===0?1.7:0,4.25,0,0xe6cb88,.3);
  });
- const tree=await loader.loadAsync(import.meta.env.BASE_URL+'models/tree.glb');
+ const tree=await loader.loadAsync(baseUrl+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
  modelGroups[3].add(root);letter.visible=false;
@@ -117,8 +118,8 @@ function populateWorld(){
  frameGroup=new THREE.Group();stickerGroup=new THREE.Group();heart.add(frameGroup,stickerGroup);
  const petalShape=new THREE.Shape();petalShape.moveTo(0,-.09);petalShape.bezierCurveTo(-.14,0,-.09,.15,.02,.12);petalShape.bezierCurveTo(.15,.06,.05,-.06,0,-.09);
  const petalGeo=new THREE.ShapeGeometry(petalShape);const pmat=new THREE.MeshStandardMaterial({color:0xc79c46,roughness:.43,metalness:.1,side:THREE.DoubleSide});
- for(let i=0;i<170;i++){const p=mesh(petalGeo,pmat,scene);const baseX=-7+(i*7.3)%14,baseZ=8-(i*17.73)%108;petals.push({mesh:p,x:baseX,y:(i*2.83)%7,z:baseZ,phase:i*2.73,speed:.11+(i%5)*.045});p.scale.setScalar(.5+(i%7)*.12);}
- const shardGeo=new THREE.TetrahedronGeometry(.17,0);for(let i=0;i<65;i++){const shard=mesh(shardGeo,i%3===0?gold:paper,modelGroups[0]);shard.visible=false;mirrorShards.push({mesh:shard,x:Math.sin(i*3.1)*1.1,y:2.7+Math.cos(i*2.3)*1.5,z:Math.sin(i*2)*.4,phase:i});}
+ for(let i=0;i<170;i++){const p=mesh(petalGeo,pmat,scene);p.castShadow=false;const baseX=-7+(i*7.3)%14,baseZ=8-(i*17.73)%108;petals.push({mesh:p,x:baseX,y:(i*2.83)%7,z:baseZ,phase:i*2.73,speed:.11+(i%5)*.045});p.scale.setScalar(.5+(i%7)*.12);}
+ const shardGeo=new THREE.TetrahedronGeometry(.17,0);for(let i=0;i<65;i++){const shard=mesh(shardGeo,i%3===0?gold:paper,modelGroups[0]);shard.visible=false;shard.castShadow=false;mirrorShards.push({mesh:shard,x:Math.sin(i*3.1)*1.1,y:2.7+Math.cos(i*2.3)*1.5,z:Math.sin(i*2)*.4,phase:i});}
 }
 function clearGroup(group){while(group.children.length){const obj=group.children[0];group.remove(obj);obj.traverse(child=>{if(child.geometry)child.geometry.dispose();if(child.material&&![gold,silver,pearl,marble].includes(child.material)){child.material.map?.dispose();child.material.dispose();}});}}
 function batchFrame(){
@@ -268,9 +269,9 @@ async function start(){
  renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xa5b0bd);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0xa5b0bd);scene.fog=new THREE.Fog(0xa5b0bd,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
- scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
- const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
- const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
+ scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=0.0001;sun.shadow.normalBias=0.02;scene.add(sun);scene.add(sun.target);
+ const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?512:1024,textureHeight:width<700?512:1024,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
+ const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;haze.castShadow=false;
  populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:crystalMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
