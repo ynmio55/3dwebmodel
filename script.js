@@ -248,8 +248,8 @@ function animate(){
 }
 async function start(){
  try{
- renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xf2f0ee);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.3;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- scene=new THREE.Scene();scene.background=new THREE.Color(0xf1efed);scene.fog=new THREE.Fog(0xf1efed,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
+ renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xe5e0dc);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ scene=new THREE.Scene();scene.background=new THREE.Color(0xe5e0dc);scene.fog=new THREE.Fog(0xe5e0dc,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
  scene.add(new THREE.HemisphereLight(0xffffff,0xd0bfbc,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
  const floor=new Reflector(new THREE.PlaneGeometry(200,90),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(44,-.07,0);scene.add(floor);
