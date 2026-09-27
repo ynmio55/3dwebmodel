@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f1efed">
-<title>Follow the Star — ดาวท่าแร่</title>
+<title>Follow the Star — Tha Rae Stars</title>
 <link rel="stylesheet" href="./style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
@@ -13,12 +13,12 @@
 <div id="error" hidden><h2>Your story needs 3D.</h2><p id="errorText">Please enable hardware acceleration and reload.</p><button onclick="location.reload()">TRY AGAIN</button></div>
 <header class="site-header"><a class="wordmark" href="#home">follow<span>the star</span><small>THA RAE · SAKON NAKHON</small></a><nav aria-label="Main navigation"><a href="#home">HOME</a><a href="#chapter1">THE STORY</a><a href="#create">CREATE YOUR STAR</a></nav><button id="sound" aria-pressed="false">SOUND OFF <span>⌁</span></button></header>
 <main>
-<section id="home" class="chapter hero"><div class="hero-title" aria-label="The Story"><span class="script-word">Follow the</span><span>ST</span><span class="mirror-space"></span><span>AR</span></div><div class="hero-bottom"><p>ดาวทุกดวง มีเรื่องราวที่มากกว่าความสวยงาม</p><a class="button" href="#chapter1">ตามดาวไปค้นพบเรื่องราว ✦</a></div><a class="skip" href="#create">SKIP TO YOUR STAR ↗</a></section>
-<section id="chapter1" class="chapter"><p class="caption">แสงดาวในขบวนแห่ท่าแร่ งดงามจนอยากเก็บภาพไว้<br>แต่เบื้องหลังดาวเหล่านั้น มีเรื่องราวอะไรอยู่?</p><a class="continue" href="#chapter2">แตะดาว หรือเลื่อนเพื่อค้นพบ ↓</a></section>
-<section id="chapter2" class="chapter"><p class="caption">ในเรื่องราวการประสูติของพระเยซู ดาวนำทางไปสู่พระกุมาร<br>แสงนั้นจึงสื่อถึงการนำทางและความหวัง</p><a class="continue" href="#chapter3">ตามดาวสู่เรื่องราวของชุมชน ↓</a></section>
-<section id="chapter3" class="chapter"><p class="caption">เรื่องราวของดาวเดินทางมาสู่ประเพณีแห่ดาวท่าแร่<br><em>แสงแห่งศรัทธาที่ชุมชนร่วมกันสืบทอด</em></p><a class="continue" href="#create">สร้างดาวที่มีความหมายของคุณ ✦</a></section>
+<section id="home" class="chapter hero"><div class="hero-title" aria-label="The Story"><span class="script-word">Follow the</span><span>ST</span><span class="mirror-space"></span><span>AR</span></div><div class="hero-bottom"><p>Every star holds a story beyond its beauty.</p><a class="button" href="#chapter1">FOLLOW THE STORY ✦</a></div><a class="skip" href="#create">SKIP TO YOUR STAR ↗</a></section>
+<section id="chapter1" class="chapter"><p class="caption">The stars of the Tha Rae parade invite us to capture their beauty.<br>But what stories shine behind their light?</p><a class="continue" href="#chapter2">TAP A STAR OR SCROLL TO DISCOVER ↓</a></section>
+<section id="chapter2" class="chapter"><p class="caption">In the Nativity story, a star guides the way to the infant Jesus.<br>Its light becomes a symbol of guidance and hope.</p><a class="continue" href="#chapter3">FOLLOW THE STAR TO THA RAE ↓</a></section>
+<section id="chapter3" class="chapter"><p class="caption">This story lives on in the Tha Rae Star Parade.<br><em>A light of faith, carried through generations.</em></p><a class="continue" href="#create">CREATE YOUR OWN MEANINGFUL STAR ✦</a></section>
 <section id="create" class="chapter studio">
-  <div class="studio-heading"><p class="eyebrow">YOUR THA RAE STAR</p><h1>แต่งดาว<br><em>ของคุณ</em></h1><p>เมื่อรู้เรื่องราวแล้ว ดาวดวงเดิมก็มีความหมายใหม่</p></div>
+  <div class="studio-heading"><p class="eyebrow">YOUR THA RAE STAR</p><h1>Make it<br><em>your star.</em></h1><p>Once you know its story, a star shines with new meaning.</p></div>
   <aside class="design-panel" aria-label="Star designer">
     <div class="panel-heading"><span>YOUR CREATION</span><button id="reset" title="Restore the original star">Reset ↺</button></div>
     <div class="categories" role="tablist" aria-label="Star customization">
@@ -32,12 +32,12 @@
       <label id="customColor" hidden><span>Choose your own color</span><input type="color" id="colorPicker" value="#bd174b"></label>
     </div>
     <div class="selection-row"><span class="selection-dot" aria-hidden="true"></span><p id="selection" aria-live="polite">GOLD</p><span id="savedNote">Selected</span></div>
-    <button class="button" id="finish">เสร็จแล้ว · แชร์ดาว <span aria-hidden="true">↗</span></button>
+    <button class="button" id="finish">FINISH & SHARE <span aria-hidden="true">↗</span></button>
   </aside>
   <div class="studio-bottom"><p id="hint">Drag to rotate · Use arrow keys when focused</p><button id="frontView" aria-label="Return star to front view">Front view ↺</button></div>
 </section>
 </main>
 <div id="progress" aria-hidden="true"><span></span></div>
-<dialog id="shareDialog"><button id="closeShare" aria-label="Close">×</button><p class="eyebrow">ดาวของคุณ · เรื่องราวของท่าแร่</p><h2>ส่งต่อแสงดาว<br>และ<em>เรื่องราวของคุณ</em></h2><p class="description">Keep your star as an image, or send someone a link to your design.</p><img id="sharePreview" alt="Preview of your star design" hidden><div class="share-actions"><button class="button" id="download">SAVE IMAGE ↓</button><button class="button light" id="copy">COPY DESIGN LINK ↗</button></div><button id="nativeShare" class="native-share" hidden>Share with someone special ↗</button><p id="status" role="status" aria-live="polite"></p><input id="linkFallback" aria-label="Your design link" readonly hidden></dialog>
+<dialog id="shareDialog"><button id="closeShare" aria-label="Close">×</button><p class="eyebrow">YOUR STAR · THE STORY OF THA RAE</p><h2>Share your light.<br>Tell <em>your story.</em></h2><p class="description">Keep your star as an image, or send someone a link to your design.</p><img id="sharePreview" alt="Preview of your star design" hidden><div class="share-actions"><button class="button" id="download">SAVE IMAGE ↓</button><button class="button light" id="copy">COPY DESIGN LINK ↗</button></div><button id="nativeShare" class="native-share" hidden>Share with someone special ↗</button><p id="status" role="status" aria-live="polite"></p><input id="linkFallback" aria-label="Your design link" readonly hidden></dialog>
 <script type="module" src="./script.js"></script>
 </body></html>
