@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { chapterProgress, stageViewport } from './layout.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -18,6 +19,7 @@ let category='material', renderer, scene, camera, heart, heartMesh, frameGroup, 
 let targetRotation=0.12, targetTilt=-.08, scrollProgress=0, smoothProgress=0, dragging=false, dragX=0,dragY=0;
 let width=innerWidth,height=innerHeight, pendingCapture=false, audioContext, soundOn=false;
 let renderFrame=0, disposed=false, sunlight;
+let stageLayout={centerX:innerWidth/2,centerY:innerHeight/2,distance:10.4};
 const clock = new THREE.Clock();
 const modelGroups=[], petals=[], mirrorShards=[];
 const marble = new THREE.MeshStandardMaterial({color:0xf0eae2,roughness:.52,metalness:.05});
@@ -149,9 +151,43 @@ function applyMaterial(){
  mat.flatShading=state.material===0||state.material===7;heartMesh.geometry=mat.flatShading?facetGeometry:heartGeometry;mat.needsUpdate=true;
 }
 function buildChoices(){
- const list=$('#choices');list.replaceChildren();list.setAttribute('aria-label',category);
- choices[category].forEach(([name,value],i)=>{const b=document.createElement('button');b.type='button';b.className='choice';b.title=name;b.setAttribute('aria-label',name);b.setAttribute('aria-pressed',String(category==='color'?state.color===value:state[category]===i));const span=document.createElement('span');span.className=['material','color'].includes(category)?'swatch':'choice-symbol';if(span.className==='swatch')span.style.setProperty('--swatch',value);else span.textContent=value;b.append(span);b.addEventListener('click',()=>{if(category==='material'){state.material=i;state.color=value;applyMaterial();}else if(category==='color'){state.color=value;applyMaterial();}else if(category==='frame'){state.frame=i;updateFrame();}else{state.sticker=i;updateSticker();}buildChoices();});list.append(b);});
- $('#selection').textContent=category==='color'?(choices.color.find(c=>c[1]===state.color)?.[0]||'CUSTOM COLOR'):choices[category][state[category]][0];$('#customColor').hidden=category!=='color';$('#colorPicker').value=state.color;
+ const list=$('#choices');
+ const previousFocus=list.contains(document.activeElement)?document.activeElement.getAttribute('aria-label'):null;
+ list.replaceChildren();list.setAttribute('aria-label',category);
+ choices[category].forEach(([name,value],i)=>{
+  const b=document.createElement('button');b.type='button';b.className='choice';b.title=name;b.setAttribute('aria-label',name);
+  b.setAttribute('aria-pressed',String(category==='color'?state.color===value:state[category]===i));
+  const span=document.createElement('span');span.setAttribute('aria-hidden','true');span.className=['material','color'].includes(category)?'swatch':'choice-symbol';
+  if(span.className==='swatch')span.style.setProperty('--swatch',value);else span.textContent=value;
+  const label=document.createElement('span');label.className='choice-label';label.textContent=name.toLowerCase();b.append(span,label);
+  b.addEventListener('click',()=>{
+   if(category==='material'){state.material=i;state.color=value;applyMaterial();}
+   else if(category==='color'){state.color=value;applyMaterial();}
+   else if(category==='frame'){state.frame=i;updateFrame();}
+   else{state.sticker=i;updateSticker();}
+   buildChoices();
+  });
+  list.append(b);
+ });
+ $('#selection').textContent=category==='color'?(choices.color.find(c=>c[1]===state.color)?.[0]||'CUSTOM COLOR'):choices[category][state[category]][0];
+ $('#customColor').hidden=category!=='color';$('#colorPicker').value=state.color;
+ $('#create').classList.toggle('color-mode',category==='color');
+ $('#design-options').setAttribute('aria-labelledby','tab-'+category);
+ if(previousFocus)[...list.children].find(b=>b.getAttribute('aria-label')===previousFocus)?.focus({preventScroll:true});
+ updateStageLayout();
+}
+function updateStageLayout(){
+ const panel=$('.design-panel').getBoundingClientRect();
+ stageLayout=stageViewport({width,height,panel,headingBottom:$('.studio-heading').getBoundingClientRect().bottom,headerBottom:$('header').getBoundingClientRect().bottom,portrait:width<=700&&height>520});
+}
+function readScroll(){
+ const sections=[...document.querySelectorAll('.chapter')];
+ scrollProgress=chapterProgress(scrollY,sections.map(s=>s.offsetTop));
+ $('#progress span').style.width=scrollProgress*25+'%';
+ $('#world').style.touchAction=scrollProgress>3.8?'none':'pan-y';
+ const active=scrollProgress>3.6?'#create':scrollProgress>.4?'#chapter1':'#home';
+ document.querySelectorAll('nav a').forEach(a=>{if(a.getAttribute('href')===active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+ updateStageLayout();
 }
 function restoreDesign(){
  const raw=new URLSearchParams(location.search).get('design');if(!raw)return;
@@ -160,27 +196,45 @@ function restoreDesign(){
 }
 function designURL(){const url=new URL(location.href);url.searchParams.set('design',`${state.material}.${state.color.slice(1)}.${state.frame}.${state.sticker}`);url.hash='create';return url.href;}
 function bindUI(){
- document.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>{category=b.dataset.category;document.querySelectorAll('[data-category]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));buildChoices();}));
- $('#colorPicker').addEventListener('input',e=>{state.color=e.target.value;applyMaterial();$('#selection').textContent='CUSTOM COLOR';});
+ const tabs=[...document.querySelectorAll('[data-category]')];
+ tabs.forEach((b,index)=>{
+  b.addEventListener('click',()=>{category=b.dataset.category;tabs.forEach(x=>{x.setAttribute('aria-selected',String(x===b));x.tabIndex=x===b?0:-1;});buildChoices();});
+  b.addEventListener('keydown',e=>{let target;if(e.key==='ArrowRight')target=(index+1)%tabs.length;else if(e.key==='ArrowLeft')target=(index+tabs.length-1)%tabs.length;else if(e.key==='Home')target=0;else if(e.key==='End')target=tabs.length-1;else return;e.preventDefault();tabs[target].click();tabs[target].focus();});
+ });
+ $('#colorPicker').addEventListener('input',e=>{state.color=e.target.value;applyMaterial();$('#selection').textContent='CUSTOM COLOR';$('#choices').querySelectorAll('.choice').forEach(b=>b.setAttribute('aria-pressed','false'));});
  $('#reset').addEventListener('click',()=>{Object.assign(state,defaults);targetRotation=.12;targetTilt=-.08;applyMaterial();updateFrame();updateSticker();buildChoices();});
+ $('#frontView').addEventListener('click',()=>{targetRotation=.12;targetTilt=-.08;});
  const canvas=$('#world');canvas.addEventListener('pointerdown',e=>{if(scrollProgress<3.8)return;dragging=true;dragX=e.clientX;dragY=e.clientY;canvas.setPointerCapture(e.pointerId);});
  canvas.addEventListener('pointermove',e=>{if(!dragging)return;targetRotation+=(e.clientX-dragX)*.009;targetTilt=clamp(targetTilt+(e.clientY-dragY)*.006,-.7,.7);dragX=e.clientX;dragY=e.clientY;});
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>dragging=false);
- canvas.addEventListener('keydown',e=>{if(scrollProgress<3.8)return;if(e.key==='ArrowLeft')targetRotation-=.15;else if(e.key==='ArrowRight')targetRotation+=.15;else return;e.preventDefault();});
- $('#finish').addEventListener('click',()=>{$('#shareDialog').showModal();$('#status').textContent='';});$('#closeShare').addEventListener('click',()=>$('#shareDialog').close());
- $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(designURL());$('#status').textContent='Your design link is copied.';}catch{$('#status').textContent=designURL();}});
- $('#download').addEventListener('click',()=>{pendingCapture=true;});
+ canvas.addEventListener('keydown',e=>{if(scrollProgress<3.8)return;if(e.key==='ArrowLeft')targetRotation-=.15;else if(e.key==='ArrowRight')targetRotation+=.15;else if(e.key==='ArrowUp')targetTilt=clamp(targetTilt-.1,-.7,.7);else if(e.key==='ArrowDown')targetTilt=clamp(targetTilt+.1,-.7,.7);else return;e.preventDefault();});
+ $('#finish').addEventListener('click',()=>{
+  renderer.render(scene,camera);
+  const preview=$('#sharePreview');preview.src=renderer.domElement.toDataURL('image/jpeg',.8);preview.hidden=false;
+  $('#shareDialog').showModal();$('#status').textContent='';$('#linkFallback').hidden=true;
+  $('#nativeShare').hidden=!navigator.share;
+ });
+ $('#closeShare').addEventListener('click',()=>$('#shareDialog').close());
+ $('#shareDialog').addEventListener('close',()=>$('#finish').focus({preventScroll:true}));
+ $('#nativeShare').addEventListener('click',async()=>{try{await navigator.share({title:'A heart made for you',url:designURL()});}catch(error){if(error.name!=='AbortError')$('#status').textContent='Sharing is unavailable. Copy the link below instead.';}});
+ $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(designURL());$('#status').textContent='Your design link is copied.';}catch{const input=$('#linkFallback');input.value=designURL();input.hidden=false;input.focus();input.select();$('#status').textContent='Select and copy this link to share your heart.';}});
+ $('#download').addEventListener('click',()=>{pendingCapture=true;$('#download').disabled=true;$('#status').textContent='Preparing your image…';});
  $('#sound').addEventListener('click',async()=>{try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();const gain=audioContext.createGain();gain.gain.value=.009;gain.connect(audioContext.destination);for(const f of [174.61,220,261.63]){const oscillator=audioContext.createOscillator();oscillator.frequency.value=f;oscillator.connect(gain);oscillator.start();}}soundOn=!soundOn;await audioContext[soundOn?'resume':'suspend']();$('#sound').innerHTML=`SOUND ${soundOn?'ON':'OFF'} <span>⌁</span>`;$('#sound').setAttribute('aria-pressed',String(soundOn));}catch{$('#sound').textContent='SOUND UNAVAILABLE';}});
- addEventListener('resize',resize);addEventListener('scroll',()=>{scrollProgress=clamp(scrollY/Math.max(550,innerHeight),0,4);$('#progress span').style.width=scrollProgress*25+'%';canvas.style.touchAction=scrollProgress>3.8?'none':'pan-y';},{passive:true});
+ addEventListener('resize',resize);addEventListener('scroll',readScroll,{passive:true});
+ document.fonts?.ready.then(()=>{readScroll();});
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#errorText').textContent='The 3D connection was interrupted. Reload to continue.';$('#error').hidden=false;cancelAnimationFrame(renderFrame);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAnimationFrame(renderFrame);else{clock.getDelta();animate();}});
 }
-function resize(){width=innerWidth;height=innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,width<700?1.4:1.7));renderer.setSize(width,height);scrollProgress=clamp(scrollY/Math.max(550,height),0,4);}
-function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your heart.',out.width/2,out.height*.92);out.toBlob(blob=>{if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-heart-story.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your heart image is ready.';},'image/png');}
+function resize(){width=innerWidth;height=innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,width<700?1.4:1.7));renderer.setSize(width,height);readScroll();}
+function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your heart.',out.width/2,out.height*.92);out.toBlob(blob=>{$('#download').disabled=false;if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-heart-story.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your heart image is ready.';},'image/png');}
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
  smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
- const x=smoothProgress*22;camera.position.set(x,3.05, width<700?13.5:10.4);camera.lookAt(x,2.65,0);
+ const x=smoothProgress*22, studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
+ const distance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
+ camera.position.set(x,3.05,distance);camera.lookAt(x,2.65,0);
+ scene.fog.near=distance+1;scene.fog.far=distance+23;
+ camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=x-4;sunlight.target.position.set(x,0,0);
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  introHeart.rotation.y=reduced?.2:time*.25;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;

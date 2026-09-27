@@ -1,24 +1,43 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f1efed">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f1efed">
 <title>The Story — a heart made yours</title>
 <link rel="stylesheet" href="./style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
-<canvas id="world" aria-label="Interactive 3D world with a customizable heart" tabindex="0"></canvas>
-<div id="loading" role="status"><span class="loading-heart">♡</span><span>OPENING YOUR STORY</span></div>
+<a class="skip-link" href="#create">Skip to heart designer</a>
+<canvas id="world" aria-label="Interactive 3D world with a customizable heart" tabindex="0" aria-describedby="hint"></canvas>
+<div id="loading" role="status"><span class="loading-heart">♡</span><span>OPENING YOUR STORY</span><small>A little magic is on its way.</small></div>
 <div id="error" hidden><h2>Your story needs 3D.</h2><p id="errorText">Please enable hardware acceleration and reload.</p><button onclick="location.reload()">TRY AGAIN</button></div>
-<header><a class="wordmark" href="#home">the<span>story</span><small>AN INTERACTIVE LOVE LETTER</small></a><nav><a href="#home">HOME</a><a href="#chapter1">THE STORY</a><a href="#create">CREATE YOUR HEART</a></nav><button id="sound" aria-pressed="false">SOUND OFF <span>⌁</span></button></header>
+<header class="site-header"><a class="wordmark" href="#home">the<span>story</span><small>AN INTERACTIVE LOVE LETTER</small></a><nav aria-label="Main navigation"><a href="#home">HOME</a><a href="#chapter1">THE STORY</a><a href="#create">CREATE YOUR HEART</a></nav><button id="sound" aria-pressed="false">SOUND OFF <span>⌁</span></button></header>
 <main>
 <section id="home" class="chapter hero"><div class="hero-title" aria-label="The Story"><span class="script-word">The</span><span>ST</span><span class="mirror-space"></span><span>RY</span></div><div class="hero-bottom"><p>CONNECTING EVERY HEART WITH LOVE</p><a class="button" href="#chapter1">BEGIN JOURNEY</a></div><a class="skip" href="#create">SKIP TO YOUR HEART ↗</a></section>
 <section id="chapter1" class="chapter"><p class="caption">WHEN LOVE WAS FORBIDDEN,<br>ONE MAN CHOSE TO BELIEVE IN IT.</p><a class="continue" href="#chapter2">SCROLL TO EXPLORE ↓</a></section>
 <section id="chapter2" class="chapter"><p class="caption">HE CELEBRATED LOVE IN SECRET.<br>FOR HIS ACTIONS, HE WAS IMPRISONED.</p><a class="continue" href="#chapter3">THE STORY CONTINUES ↓</a></section>
 <section id="chapter3" class="chapter"><p class="caption">HIS FINAL LETTER ENDED WITH TWO WORDS.<br><em>“YOUR VALENTINE.”</em></p><a class="continue" href="#create">MAKE YOUR OWN LOVE LETTER ↓</a></section>
-<section id="create" class="chapter studio"><h1 class="caption">LET'S CUSTOMISE YOUR 3D HEART</h1><div class="categories" role="tablist" aria-label="Heart customization"><button role="tab" aria-selected="true" data-category="material">MATERIAL</button><button role="tab" aria-selected="false" data-category="color">COLOR</button><button role="tab" aria-selected="false" data-category="frame">FRAME</button><button role="tab" aria-selected="false" data-category="sticker">STICKERS</button><button id="reset" class="reset">RESET DESIGN ↺</button></div><div class="options"><div id="choices" role="group" aria-label="Materials"></div><label id="customColor" hidden>CUSTOM COLOR<input type="color" id="colorPicker" value="#bd174b"></label><p id="selection" aria-live="polite">PORCELAIN</p></div><div class="studio-bottom"><p id="hint">DRAG TO ROTATE · ARROW KEYS TO TURN</p><button class="button" id="finish">FINISH & SHARE</button></div></section>
+<section id="create" class="chapter studio">
+  <div class="studio-heading"><p class="eyebrow">THE HEART ATELIER</p><h1>Make it <em>yours.</em></h1><p>A little love, in every detail.</p></div>
+  <aside class="design-panel" aria-label="Heart designer">
+    <div class="panel-heading"><span>YOUR CREATION</span><button id="reset" title="Restore the original heart">Reset ↺</button></div>
+    <div class="categories" role="tablist" aria-label="Heart customization">
+      <button id="tab-material" role="tab" aria-selected="true" aria-controls="design-options" data-category="material">Material</button>
+      <button id="tab-color" role="tab" aria-selected="false" aria-controls="design-options" tabindex="-1" data-category="color">Color</button>
+      <button id="tab-frame" role="tab" aria-selected="false" aria-controls="design-options" tabindex="-1" data-category="frame">Frame</button>
+      <button id="tab-sticker" role="tab" aria-selected="false" aria-controls="design-options" tabindex="-1" data-category="sticker">Details</button>
+    </div>
+    <div id="design-options" role="tabpanel" aria-labelledby="tab-material">
+      <div id="choices" role="group" aria-label="Materials"></div>
+      <label id="customColor" hidden><span>Choose your own color</span><input type="color" id="colorPicker" value="#bd174b"></label>
+    </div>
+    <div class="selection-row"><span class="selection-dot" aria-hidden="true"></span><p id="selection" aria-live="polite">PORCELAIN</p><span id="savedNote">Selected</span></div>
+    <button class="button" id="finish">Finish & share <span aria-hidden="true">↗</span></button>
+  </aside>
+  <div class="studio-bottom"><p id="hint">Drag to rotate · Use arrow keys when focused</p><button id="frontView" aria-label="Return heart to front view">Front view ↺</button></div>
+</section>
 </main>
 <div id="progress" aria-hidden="true"><span></span></div>
-<dialog id="shareDialog"><button id="closeShare" aria-label="Close">×</button><p class="eyebrow">MADE BY YOU, FOR SOMEONE SPECIAL</p><h2>A little piece<br>of <em>your heart.</em></h2><p class="description">Every detail tells your story.</p><div class="share-actions"><button class="button" id="download">SAVE IMAGE ↓</button><button class="button light" id="copy">COPY DESIGN LINK ↗</button></div><p id="status" role="status"></p></dialog>
+<dialog id="shareDialog"><button id="closeShare" aria-label="Close">×</button><p class="eyebrow">MADE BY YOU, FOR SOMEONE SPECIAL</p><h2>A little piece<br>of <em>your heart.</em></h2><p class="description">Keep your heart as an image, or send someone a link to your design.</p><img id="sharePreview" alt="Preview of your heart design" hidden><div class="share-actions"><button class="button" id="download">SAVE IMAGE ↓</button><button class="button light" id="copy">COPY DESIGN LINK ↗</button></div><button id="nativeShare" class="native-share" hidden>Share with someone special ↗</button><p id="status" role="status" aria-live="polite"></p><input id="linkFallback" aria-label="Your design link" readonly hidden></dialog>
 <script type="module" src="./script.js"></script>
 </body></html>
