@@ -287,17 +287,36 @@ function bindUI(){
  $('#sound').addEventListener('click',async()=>{
   try{
    if(!bgmAudio){
-    bgmAudio=new Audio(christmasAudio);
+    const sources=[
+     './christmas-music.mp3',
+     './public/christmas-music.mp3',
+     'christmas-music.mp3',
+     'public/christmas-music.mp3',
+     christmasAudio
+    ];
+    let srcIdx=0;
+    bgmAudio=new Audio(sources[0]);
     bgmAudio.loop=true;
     bgmAudio.preload='auto';
-    bgmAudio.volume=.28;
+    bgmAudio.volume=0.5;
+    bgmAudio.addEventListener('error',async()=>{
+     srcIdx++;
+     if(srcIdx<sources.length){
+      bgmAudio.src=sources[srcIdx];
+      if(soundOn)try{await bgmAudio.play();}catch{}
+     }
+    });
    }
    if(soundOn){
     bgmAudio.pause();
     soundOn=false;
    }else{
-    await bgmAudio.play();
     soundOn=true;
+    try{
+     await bgmAudio.play();
+    }catch(playErr){
+     console.warn('Playback waiting on source resolution:',playErr);
+    }
    }
    $('#sound').innerHTML=`SOUND ${soundOn?'ON':'OFF'} <span>⌁</span>`;
    $('#sound').setAttribute('aria-pressed',String(soundOn));
