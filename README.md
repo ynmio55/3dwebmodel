@@ -1,6 +1,6 @@
 # Amore — interactive 3D heart studio
 
-A browser-based 3D customization demo inspired by the visual direction of the supplied video. This is an original implementation with a procedurally generated heart mesh and no JavaScript dependencies.
+A browser-based interpretation of the supplied video, with a STORY opening, Roman-inspired scene transitions, a marble-and-columns backdrop, and a customizable faceted heart. The heart mesh is generated and shaded in Canvas without JavaScript dependencies.
 
 ## Run
 
@@ -15,8 +15,10 @@ Then open <http://localhost:8000>. Google Fonts are optional; the page falls bac
 ## Features
 
 - Drag or touch to rotate a heart rendered on Canvas.
-- Choose materials, colors, trims, and sparkle effects.
+- Choose from eight materials, colors, frames, and sticker effects.
+- Follow the opening and story scenes into the full-screen design studio.
+- Toggle a quiet synthesized ambient chord from the sound control.
 - Save a PNG image or share a URL that restores the selected design.
 - Responsive desktop and mobile layout; no account or backend required.
 
-This is a visual prototype. The video’s original 3D models, branding, and assets are not included.
+This is a visual prototype based on the provided screen recording. The recording does not provide the original site's source code, 3D models, textures, music, or animation assets, so those elements are recreated rather than extracted.
