@@ -1,3 +1,4 @@
+import {facetedStar,stoneTexture,previewStars} from './star-design.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
@@ -46,7 +47,7 @@ function makeMarbleTexture(){
  for(let k=0;k<40;k++){ctx.beginPath();for(let x=0;x<=512;x+=3){const y=k*18+Math.sin(x*.013+k)*42+Math.sin(x*.057+k*3)*7;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle=`rgba(101,39,65,${.09+(k%5)*.035})`;ctx.lineWidth=.3+(k%4)*.45;ctx.stroke();}
  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
 }
-const marbleMap=makeMarbleTexture();
+const marbleMap=stoneTexture();marble.map=marbleMap;marble.color.set(0xe4e8ee);let starPreviews=[];
 function column(parent,x,z,h=4,broken=false){
  const g=new THREE.Group();g.position.set(x,0,z);parent.add(g);
  mesh(new THREE.BoxGeometry(.97,.12,.97),marble,g,0,.06,0);
@@ -95,7 +96,7 @@ async function loadUserModels(){
  star.scene.updateMatrixWorld(true);star.scene.traverse(o=>{if(o.isMesh&&!geometry)geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);});
  geometry.computeBoundingBox();const size=geometry.boundingBox.getSize(new THREE.Vector3());geometry.center();geometry.scale(2/Math.max(size.x,size.y),2/Math.max(size.x,size.y),2/Math.max(size.x,size.y));
  const coords=geometry.getAttribute('position'),uv=[];for(let i=0;i<coords.count;i++)uv.push(coords.getX(i)/2+.5,coords.getY(i)/2+.5);geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
- heartGeometry=geometry;facetGeometry=geometry;heartMesh.geometry=geometry;introHeart.geometry=geometry;storyStars.forEach(o=>o.geometry=geometry);
+ heartGeometry=facetedStar();facetGeometry=heartGeometry;heartMesh.geometry=heartGeometry;introHeart.geometry=geometry;storyStars.forEach(o=>o.geometry=geometry);
  const tree=await loader.loadAsync(import.meta.env.BASE_URL+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
@@ -153,12 +154,12 @@ function updateSticker(){
  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false});const sticker=mesh(new THREE.PlaneGeometry(.5,.5),mat,stickerGroup,.27,.19,.72);sticker.userData.texture=tex;
 }
 function applyMaterial(){
- const mat=heartMesh.material;mat.color.set(state.color);mat.map=[3,4].includes(state.material)?marbleMap:null;
- mat.metalness=[0,1,6].includes(state.material)?.85:.15;
+ const mat=heartMesh.material;mat.color.set(state.color);mat.map=marbleMap;
+ mat.metalness=[0,1,6].includes(state.material)?.58:.18;
  mat.roughness=state.material===0?.48:state.material===6?.2:.19;
  mat.clearcoat=state.material===0?.3:1;mat.transmission=state.material===4?.22:0;mat.thickness=.7;
- mat.bumpMap=[3,4].includes(state.material)?marbleMap:null;mat.bumpScale=.035;
- mat.flatShading=state.material===0||state.material===7;heartMesh.geometry=mat.flatShading?facetGeometry:heartGeometry;mat.needsUpdate=true;
+ mat.bumpMap=marbleMap;mat.bumpScale=.018;
+ mat.flatShading=true;heartMesh.geometry=mat.flatShading?facetGeometry:heartGeometry;mat.needsUpdate=true;
 }
 function buildChoices(){
  const list=$('#choices');
@@ -169,7 +170,7 @@ function buildChoices(){
   b.setAttribute('aria-pressed',String(category==='color'?state.color===value:state[category]===i));
   const span=document.createElement('span');span.setAttribute('aria-hidden','true');span.className=['material','color'].includes(category)?'swatch':'choice-symbol';
   if(span.className==='swatch')span.style.setProperty('--swatch',value);else span.textContent=value;
-  const label=document.createElement('span');label.className='choice-label';label.textContent=name.toLowerCase();b.append(span,label);
+  const label=document.createElement('span');label.className='choice-label';label.textContent=name.toLowerCase();if(category==='material'&&starPreviews[i]){const img=document.createElement('img');img.src=starPreviews[i];img.alt='';img.draggable=false;b.append(img,label);}else b.append(span,label);
   b.addEventListener('click',()=>{
    if(category==='material'){state.material=i;state.color=value;applyMaterial();}
    else if(category==='color'){state.color=value;applyMaterial();}
@@ -184,11 +185,11 @@ function buildChoices(){
  $('#create').classList.toggle('color-mode',category==='color');
  $('#design-options').setAttribute('aria-labelledby','tab-'+category);
  if(previousFocus)[...list.children].find(b=>b.getAttribute('aria-label')===previousFocus)?.focus({preventScroll:true});
+ document.querySelectorAll('[data-finish]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.finish)===([0,6,1].includes(state.material)?state.material:2))));
  updateStageLayout();
 }
 function updateStageLayout(){
- const panel=$('.design-panel').getBoundingClientRect();
- stageLayout=stageViewport({width,height,panel,headingBottom:$('.studio-heading').getBoundingClientRect().bottom,headerBottom:$('header').getBoundingClientRect().bottom,portrait:usesBottomDock(width,height)});
+ const portrait=width<=700;stageLayout={centerX:width/2,centerY:height*(portrait?.37:.46),distance:Math.max(portrait?8:7.7,2.4*height/(2*Math.tan(39*Math.PI/360)*Math.min(width*(portrait?.60:.29),height*(portrait?.32:.37))))};
 }
 function readScroll(){
  const sections=[...document.querySelectorAll('.chapter')];
@@ -207,6 +208,7 @@ function restoreDesign(){
 }
 function designURL(){const url=new URL(location.href);url.searchParams.set('design',`${state.material}.${state.color.slice(1)}.${state.frame}.${state.sticker}`);url.hash='create';return url.href;}
 function bindUI(){
+ document.querySelectorAll('[data-finish]').forEach(b=>b.addEventListener('click',()=>{state.material=Number(b.dataset.finish);state.color=choices.material[state.material][1];category='material';applyMaterial();buildChoices();}));
  const tabs=[...document.querySelectorAll('[data-category]')];
  tabs.forEach((b,index)=>{
   b.addEventListener('click',()=>{category=b.dataset.category;tabs.forEach(x=>{x.setAttribute('aria-selected',String(x===b));x.tabIndex=x===b?0:-1;});buildChoices();});
@@ -259,13 +261,13 @@ function animate(){
 }
 async function start(){
  try{
- renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xe5e0dc);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- scene=new THREE.Scene();scene.background=new THREE.Color(0xe5e0dc);scene.fog=new THREE.Fog(0xe5e0dc,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
+ renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xa5b0bd);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ scene=new THREE.Scene();scene.background=new THREE.Color(0xa5b0bd);scene.fog=new THREE.Fog(0xa5b0bd,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
- scene.add(new THREE.HemisphereLight(0xffffff,0xd0bfbc,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
- const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
+ const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
  const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
- populateWorld();await loadUserModels();restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
+ populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:marbleMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
 start();
