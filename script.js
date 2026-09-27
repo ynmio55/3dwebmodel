@@ -271,35 +271,42 @@ function saveImage(){renderer.render(scene,camera);const source=renderer.domElem
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
 
- // Softer scroll following keeps the camera fluid even on fast mouse-wheel input.
- smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:5.2,dt);
+ // Smooth scroll-following. The world still advances continuously, but the
+ // camera now walks through it on a low, alternating left/right path.
+ smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:4.8,dt);
 
  const travel=smoothProgress*22;
  const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
- const baseDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
+ const baseDistance=THREE.MathUtils.lerp(width<700?11.8:9.4,stageLayout.distance,studioBlend);
 
- // Continuous cinematic focus curve: no per-chapter reset, no hard zoom jump.
- const chapterFocus=.5+.5*Math.cos(smoothProgress*Math.PI*2);
- const transitionFocus=1-chapterFocus;
- const zoomAmount=reduced?0:(width<700?.55:.82);
- const distance=baseDistance-chapterFocus*zoomAmount;
+ // Alternate sides at each chapter, crossing the centre between scenes.
+ // Blend back to centre for the final design studio.
+ const walkAmp=reduced?0:(width<700?1.05:1.85);
+ const targetX=Math.cos(smoothProgress*Math.PI)*walkAmp*(1-studioBlend);
+ const stride=.5-.5*Math.cos(smoothProgress*Math.PI*2);
+ const targetY=THREE.MathUtils.lerp(width<700?2.15:2.0,3.05,studioBlend)+(reduced?0:stride*.06);
 
- // Gentle camera drift makes the next scene feel like it is being approached,
- // while remaining C1-continuous across chapter boundaries.
- const driftX=reduced?0:Math.sin(smoothProgress*Math.PI)*.16;
- const driftY=reduced?0:transitionFocus*.10;
- const lookOffsetX=reduced?0:-driftX*.30;
+ // Keep a slight forward push, but avoid zoom pulses. The sense of movement
+ // comes from actually passing the scene, not from scaling the image.
+ const distance=baseDistance-(reduced?0:stride*(width<700?.18:.28));
+ const targetZ=distance-travel;
 
- camera.position.x=THREE.MathUtils.damp(camera.position.x,driftX,5.5,dt);
- camera.position.y=THREE.MathUtils.damp(camera.position.y,3.05+driftY,5.5,dt);
- camera.position.z=THREE.MathUtils.damp(camera.position.z,distance-travel,7,dt);
+ camera.position.x=THREE.MathUtils.damp(camera.position.x,targetX,5.2,dt);
+ camera.position.y=THREE.MathUtils.damp(camera.position.y,targetY,5.2,dt);
+ camera.position.z=THREE.MathUtils.damp(camera.position.z,targetZ,6.5,dt);
 
- const targetFov=39-(reduced?0:chapterFocus*(width<700?2.2:3.2));
+ // Look inward toward each scene as we pass it. This creates the gallery-like
+ // left/right reveal instead of flying over or straight through the centre.
+ const lookX=THREE.MathUtils.lerp(0,-targetX*.48,1-studioBlend);
+ const lookY=THREE.MathUtils.lerp(width<700?2.3:2.35,2.65,studioBlend);
+ const lookZ=-travel-(reduced?0:stride*.65);
+ camera.lookAt(lookX,lookY,lookZ);
+
+ const targetFov=THREE.MathUtils.lerp(width<700?40:38.5,39,studioBlend);
  camera.fov=THREE.MathUtils.damp(camera.fov,targetFov,5,dt);
  camera.updateProjectionMatrix();
- camera.lookAt(lookOffsetX,2.65-driftY*.10,-travel);
 
- scene.fog.near=distance+1;scene.fog.far=distance+23;
+ scene.fog.near=distance+1;scene.fog.far=distance+24;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
 
@@ -311,12 +318,11 @@ function animate(){
 
  for(let i=0;i<modelGroups.length;i++){
   const delta=Math.abs(smoothProgress-i);
-  modelGroups[i].visible=delta<1.35;
+  modelGroups[i].visible=delta<1.55;
   if(modelGroups[i].visible){
-   const focus=1-THREE.MathUtils.smoothstep(delta,0,1.05);
-   const targetScale=reduced?1:.99+focus*.025;
+   const targetScale=reduced?1:1+.012*(1-THREE.MathUtils.smoothstep(delta,0,1.1));
    const current=modelGroups[i].scale.x||1;
-   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,4.5,dt));
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,4,dt));
   }
  }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
