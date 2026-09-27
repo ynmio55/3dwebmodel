@@ -128,8 +128,13 @@ async function loadUserModels(){
 }
 function populateWorld(){
  heartGeometry=facetedStar();facetGeometry=heartGeometry;
- for(let i=0;i<5;i++){const group=new THREE.Group();group.position.z=-i*22;scene.add(group);modelGroups.push(group);
- column(group,-4.1,-1.7,i===4?4.8:5.3);column(group,4.0,-1.0,i===4?2.7:4.7,true);column(group,-2.8,-6,3.2,true);column(group,3.1,-8,5.0);island(group,i===4?1.8:2.3);
+ const sceneSpacing=30;
+ const sceneOffsets=[0,-3.4,3.6,-3.5,0];
+ for(let i=0;i<5;i++){
+  const group=new THREE.Group();
+  group.position.set(sceneOffsets[i],0,-i*sceneSpacing);
+  scene.add(group);modelGroups.push(group);
+  column(group,-4.8,-2.2,i===4?4.8:5.3);column(group,4.7,-1.4,i===4?2.7:4.7,true);column(group,-3.6,-7.2,3.2,true);column(group,3.9,-9.1,5.0);island(group,i===4?1.8:2.3);
  }
  mirrorGroup=makeMirror(modelGroups[0]);cage=new THREE.Group();modelGroups[2].add(cage);
  letter=new THREE.Group();letter.position.set(0,2.1,0);modelGroups[3].add(letter);
@@ -271,54 +276,59 @@ function saveImage(){renderer.render(scene,camera);const source=renderer.domElem
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
 
- // Smooth scroll-following. The world still advances continuously, but the
- // camera now walks through it on a low, alternating left/right path.
- smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:4.8,dt);
+ smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:4.6,dt);
 
- const travel=smoothProgress*22;
+ const sceneSpacing=30;
+ const travel=smoothProgress*sceneSpacing;
  const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
- const baseDistance=THREE.MathUtils.lerp(width<700?11.8:9.4,stageLayout.distance,studioBlend);
-
- // Alternate sides at each chapter, crossing the centre between scenes.
- // Blend back to centre for the final design studio.
- const walkAmp=reduced?0:(width<700?1.05:1.85);
- const stride=.5-.5*Math.cos(smoothProgress*Math.PI*2);
-
- // Keep the landing page exactly like the original centered composition,
- // then blend into the low left/right walk-through only after leaving HOME.
  const storyBlend=THREE.MathUtils.smoothstep(smoothProgress,.18,.72);
- const walkX=Math.cos(smoothProgress*Math.PI)*walkAmp*(1-studioBlend);
- const targetX=THREE.MathUtils.lerp(0,walkX,storyBlend);
- const walkY=THREE.MathUtils.lerp(width<700?2.15:2.0,3.05,studioBlend)+(reduced?0:stride*.06);
- const targetY=THREE.MathUtils.lerp(3.05,walkY,storyBlend);
 
- // HOME keeps the old camera distance. Story chapters use the closer walk path.
- const homeDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- const walkDistance=baseDistance-(reduced?0:stride*(width<700?.18:.28));
- const distance=THREE.MathUtils.lerp(homeDistance,walkDistance,storyBlend);
- const targetZ=distance-travel;
+ // Wide gallery layout: scenes alternate left/right while the camera uses the
+ // opposite lane, so it passes diagonally beside each model instead of through it.
+ const sceneX=[0,-3.4,3.6,-3.5,0];
+ const cameraLane=[0,2.25,-2.35,2.25,0];
 
- camera.position.x=THREE.MathUtils.damp(camera.position.x,targetX,5.2,dt);
- camera.position.y=THREE.MathUtils.damp(camera.position.y,targetY,5.2,dt);
- camera.position.z=THREE.MathUtils.damp(camera.position.z,targetZ,6.5,dt);
+ const samplePath=(values,p)=>{
+  const max=values.length-1;
+  const i=Math.floor(clamp(p,0,max));
+  if(i>=max)return values[max];
+  const t=THREE.MathUtils.smootherstep(p-i,0,1);
+  return THREE.MathUtils.lerp(values[i],values[i+1],t);
+ };
 
- // HOME looks straight at the original hero. After scrolling, turn toward
- // alternating scenes as the camera walks past them.
- const walkLookX=THREE.MathUtils.lerp(0,-walkX*.48,1-studioBlend);
- const lookX=THREE.MathUtils.lerp(0,walkLookX,storyBlend);
- const walkLookY=THREE.MathUtils.lerp(width<700?2.3:2.35,2.65,studioBlend);
- const lookY=THREE.MathUtils.lerp(2.65,walkLookY,storyBlend);
- const lookZ=-travel-(reduced?0:stride*.65*storyBlend);
- camera.lookAt(lookX,lookY,lookZ);
+ const storyCamX=samplePath(cameraLane,smoothProgress);
+ const focusX=samplePath(sceneX,smoothProgress);
 
- const walkFov=THREE.MathUtils.lerp(width<700?40:38.5,39,studioBlend);
- const targetFov=THREE.MathUtils.lerp(39,walkFov,storyBlend);
- camera.fov=THREE.MathUtils.damp(camera.fov,targetFov,5,dt);
+ // Keep HOME exactly centered, then lower the viewpoint into a human-height
+ // walk-through path. Return to the original height for the design studio.
+ const walkingY=width<700?2.05:1.9;
+ const storyY=THREE.MathUtils.lerp(walkingY,3.05,studioBlend);
+ const targetX=THREE.MathUtils.lerp(0,storyCamX,storyBlend);
+ const targetY=THREE.MathUtils.lerp(3.05,storyY,storyBlend);
+
+ const homeDistance=width<700?13.5:10.4;
+ const walkDistance=width<700?12.4:10.8;
+ const baseDistance=THREE.MathUtils.lerp(homeDistance,walkDistance,storyBlend);
+ const finalDistance=THREE.MathUtils.lerp(baseDistance,stageLayout.distance,studioBlend);
+ const targetZ=finalDistance-travel;
+
+ camera.position.x=THREE.MathUtils.damp(camera.position.x,targetX,4.8,dt);
+ camera.position.y=THREE.MathUtils.damp(camera.position.y,targetY,4.8,dt);
+ camera.position.z=THREE.MathUtils.damp(camera.position.z,targetZ,6.0,dt);
+
+ // Look across the path toward the featured scene. A small forward lead keeps
+ // the movement flowing and prevents the camera from staring backwards.
+ const lookX=THREE.MathUtils.lerp(0,focusX*.82,storyBlend)*(1-studioBlend);
+ const lookY=THREE.MathUtils.lerp(2.65,width<700?2.25:2.3,storyBlend);
+ const lookAhead=THREE.MathUtils.lerp(0,2.2,storyBlend)*(1-studioBlend);
+ camera.lookAt(lookX,THREE.MathUtils.lerp(lookY,2.65,studioBlend),-travel-lookAhead);
+
+ camera.fov=THREE.MathUtils.damp(camera.fov,39,5,dt);
  camera.updateProjectionMatrix();
 
- scene.fog.near=distance+1;scene.fog.far=distance+24;
+ scene.fog.near=finalDistance+2;scene.fog.far=finalDistance+36;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
- sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
+ sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(focusX,0,-travel);
 
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
@@ -328,11 +338,10 @@ function animate(){
 
  for(let i=0;i<modelGroups.length;i++){
   const delta=Math.abs(smoothProgress-i);
-  modelGroups[i].visible=delta<1.55;
+  modelGroups[i].visible=delta<1.7;
   if(modelGroups[i].visible){
-   const targetScale=reduced?1:1+.012*(1-THREE.MathUtils.smoothstep(delta,0,1.1));
    const current=modelGroups[i].scale.x||1;
-   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,4,dt));
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,1,4,dt));
   }
  }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
