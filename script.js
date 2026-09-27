@@ -68,7 +68,9 @@ function makeMirror(parent){
  for(let side of [-1,1])for(let j=0;j<9;j++){const a=-.9+j*.23;leaf(g,side*(.72+Math.sin(a)*.37),1.42+Math.cos(a)*.30,.07,side*(a-.6),.18);leaf(g,side*(.65+Math.sin(a)*.35),-1.52-Math.cos(a)*.18,.07,side*(a+2),.16);}
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;leaf(g,Math.cos(a)*.20,1.93+Math.sin(a)*.20,.05,-a+Math.PI/2,.19);}sphere(g,0,1.93,.1,.11,.11,.08,gold);
  const ornament=mesh(new THREE.TorusKnotGeometry(.21,.026,64,8,2,3),gold,g,0,-1.96,.08);ornament.scale.set(1,.65,.25);
- introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xd8bd93,metalness:.65,roughness:.27,clearcoat:1}),g,0,0,.25);introHeart.scale.setScalar(.61);
+ introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xe6c97f,metalness:.42,roughness:.18,clearcoat:1,clearcoatRoughness:.08}),g,0,.08,.32);
+ introHeart.scale.setScalar(.68);
+ introHeart.castShadow=false;
  return g;
 }
 let sculptureReady;
@@ -125,6 +127,17 @@ async function loadUserModels(){
  }}); modelGroups[3].add(root);letter.visible=false;
  floatingStar(modelGroups[3],0,3.45,0,0xd4aa4f,.38);
  for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
+ introHeart.material.color.set(0xe6c97f);
+ introHeart.material.metalness=.46;
+ introHeart.material.roughness=.16;
+ introHeart.material.clearcoat=1;
+ introHeart.material.clearcoatRoughness=.06;
+ introHeart.material.transmission=.05;
+ introHeart.material.thickness=.35;
+ introHeart.material.envMapIntensity=2;
+ introHeart.material.emissive.set(0x5a3b08);
+ introHeart.material.emissiveIntensity=.035;
+ introHeart.material.needsUpdate=true;
 }
 function populateWorld(){
  heartGeometry=facetedStar();facetGeometry=heartGeometry;
