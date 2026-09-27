@@ -100,21 +100,29 @@ async function loadUserModels(){
  const tree=await loader.loadAsync(baseUrl+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){
-  const name=(o.name||'').toLowerCase();
-  const sourceMat=Array.isArray(o.material)?o.material[0]:o.material;
-  let mat=sourceMat&&sourceMat.isMaterial?sourceMat.clone():new THREE.MeshStandardMaterial({color:0xffffff,roughness:.8,metalness:.02});
-
-  if(name.includes('star')){
-   mat=new THREE.MeshStandardMaterial({color:0xd4aa4f,roughness:.38,metalness:.18});
-  }else{
-   if('roughness' in mat)mat.roughness=Math.max(mat.roughness??.6,.72);
-   if('metalness' in mat)mat.metalness=Math.min(mat.metalness??0,.04);
+  const geom=o.geometry;
+  if(geom?.attributes?.position){
+   geom.computeBoundingBox();
+   const b=geom.boundingBox;
+   const size=b.getSize(new THREE.Vector3());
+   const midX=(b.min.x+b.max.x)*.5, midZ=(b.min.z+b.max.z)*.5;
+   const trunkRadius=Math.max(size.x,size.z)*.085;
+   const trunkTop=b.min.y+size.y*.72;
+   const pos=geom.attributes.position;
+   const colors=new Float32Array(pos.count*3);
+   const leafColor=new THREE.Color(0x4f7a67);
+   const trunkColor=new THREE.Color(0x8a6848);
+   for(let i=0;i<pos.count;i++){
+    const dx=pos.getX(i)-midX,dz=pos.getZ(i)-midZ,y=pos.getY(i);
+    const isTrunk=(dx*dx+dz*dz)<trunkRadius*trunkRadius && y<trunkTop;
+    const col=isTrunk?trunkColor:leafColor;
+    colors[i*3]=col.r;colors[i*3+1]=col.g;colors[i*3+2]=col.b;
+   }
+   geom.setAttribute('color',new THREE.BufferAttribute(colors,3));
   }
-
-  o.material=mat;
+  o.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,metalness:.02});
   o.castShadow=true;o.receiveShadow=true;
- }});
- modelGroups[3].add(root);letter.visible=false;
+ }}); modelGroups[3].add(root);letter.visible=false;
  floatingStar(modelGroups[3],0,3.45,0,0xd4aa4f,.38);
  for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
 }
