@@ -1,4 +1,5 @@
 import {facetedStar,stoneTexture,crystalTexture,previewStars} from './star-design.js';
+import { christmasAudio } from './audio-data.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
@@ -286,16 +287,10 @@ function bindUI(){
  $('#sound').addEventListener('click',async()=>{
   try{
    if(!bgmAudio){
-    const baseUrl=(typeof import.meta!=='undefined'&&import.meta.env?.BASE_URL)||'./';
-    bgmAudio=new Audio(baseUrl+'christmas-music.mp3');
-    bgmAudio.addEventListener('error',()=>{
-     if(!bgmAudio.src.includes('public/')){
-      bgmAudio.src='./public/christmas-music.mp3';
-      if(soundOn)bgmAudio.play().catch(()=>{});
-     }
-    });
+    bgmAudio=new Audio(christmasAudio);
     bgmAudio.loop=true;
-    bgmAudio.volume=0.5;
+    bgmAudio.preload='auto';
+    bgmAudio.volume=.28;
    }
    if(soundOn){
     bgmAudio.pause();
@@ -308,7 +303,9 @@ function bindUI(){
    $('#sound').setAttribute('aria-pressed',String(soundOn));
   }catch(err){
    console.error(err);
+   soundOn=false;
    $('#sound').textContent='SOUND UNAVAILABLE';
+   $('#sound').setAttribute('aria-pressed','false');
   }
  });
  addEventListener('resize',resize);addEventListener('scroll',readScroll,{passive:true});
