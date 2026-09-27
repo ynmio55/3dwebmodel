@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
@@ -70,14 +71,23 @@ function makeMirror(parent){
  introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xd8bd93,metalness:.65,roughness:.27,clearcoat:1}),g,0,0,.25);introHeart.scale.setScalar(.61);
  return g;
 }
+let sculptureReady;
 function makeSculpture(parent){
- const group=new THREE.Group();group.position.y=.17;parent.add(group);
- // Two intertwined abstract marble figures, with curved feathered wings.
- for(const s of [-1,1]){const figure=new THREE.Group();figure.rotation.z=s*.30;figure.position.set(s*.27,.65,0);group.add(figure);
- sphere(figure,0,.9,0,.23,.58,.22);sphere(figure,0,1.57,0,.19,.24,.19);sphere(figure,.02,.08,0,.15,.63,.16);
- tube([new THREE.Vector3(0,1.25,0),new THREE.Vector3(-s*.5,1.55,.05),new THREE.Vector3(-s*.43,1.88,.02)],.07,figure,marble);
- for(let i=0;i<11;i++){const feather=sphere(figure,s*(.28+i*.055),1.28+i*.14,-.18,.065,.55+i*.026,.045);feather.rotation.z=-s*(.16+i*.025);}
- }
+ const group=new THREE.Group();parent.add(group);
+ sculptureReady=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/cupid-psyche.glb`).then(gltf=>{
+  const statue=gltf.scene;
+  statue.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(statue),size=box.getSize(new THREE.Vector3());
+  const scale=4.4/Math.max(size.x,size.y);
+  statue.scale.multiplyScalar(scale);
+  statue.updateMatrixWorld(true);
+  box.setFromObject(statue);
+  const center=box.getCenter(new THREE.Vector3());
+  statue.position.x-=center.x;statue.position.z-=center.z;statue.position.y+=.12-box.min.y;
+  const material=new THREE.MeshStandardMaterial({color:0xe4d4bf,roughness:.62,metalness:0,envMapIntensity:.35});
+  statue.traverse(obj=>{if(obj.isMesh){obj.material=material;obj.castShadow=true;obj.receiveShadow=true;}});
+  group.add(statue);
+ });
  return group;
 }
 function makeCage(parent){
@@ -254,7 +264,7 @@ async function start(){
  scene.add(new THREE.HemisphereLight(0xffffff,0xd0bfbc,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
  const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
  const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
- populateWorld();restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
- }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='3D could not start. Use a current browser with hardware acceleration enabled.';$('#error').hidden=false;}
+ populateWorld();await sculptureReady;restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
+ }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
 start();

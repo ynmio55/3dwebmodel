@@ -1,0 +1,8 @@
+3D Printable Psyche Revived By Cupid
+Creator: 3DLadnik. Based on Psyche Revived by Cupid's Kiss at The Louvre, Paris (remix).
+Source: https://sketchfab.com/3d-models/3d-printable-psyche-revived-by-cupid-63c85f72410a4306bfe73978fca8c1b5
+License: Creative Commons Attribution (CC BY).
+https://creativecommons.org/licenses/by/4.0/
+Uploaded by the project owner. Adaptations: merged geometry, welded coincident
+vertices, averaged normals, removed original material, applied ivory material
+and normalized scale and position in the application. Triangle positions preserved.
