@@ -257,21 +257,35 @@ function resize(){width=innerWidth;height=innerHeight;camera.aspect=width/height
 function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your star.',out.width/2,out.height*.92);out.toBlob(blob=>{$('#download').disabled=false;if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-tha-rae-star.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your star image is ready.';},'image/png');}
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
- smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
 
- // Keep the original smooth linear travel, then layer a continuous zoom wave
- // on top. Avoid per-chapter resets so the camera never jumps at boundaries.
- const x=0, travel=smoothProgress*22;
+ // Softer scroll following keeps the camera fluid even on fast mouse-wheel input.
+ smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:5.2,dt);
+
+ const travel=smoothProgress*22;
  const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
  const baseDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- const chapterFocus=.5+.5*Math.cos(smoothProgress*Math.PI*2);
- const betweenFocus=1-chapterFocus;
- const zoomAmount=reduced?0:(width<700?.72:1.05);
- const distance=baseDistance-chapterFocus*zoomAmount;
- const cameraLift=reduced?0:betweenFocus*.12;
 
- camera.position.set(x,3.05+cameraLift,distance-travel);
- camera.lookAt(x,2.65-cameraLift*.12,-travel);
+ // Continuous cinematic focus curve: no per-chapter reset, no hard zoom jump.
+ const chapterFocus=.5+.5*Math.cos(smoothProgress*Math.PI*2);
+ const transitionFocus=1-chapterFocus;
+ const zoomAmount=reduced?0:(width<700?.55:.82);
+ const distance=baseDistance-chapterFocus*zoomAmount;
+
+ // Gentle camera drift makes the next scene feel like it is being approached,
+ // while remaining C1-continuous across chapter boundaries.
+ const driftX=reduced?0:Math.sin(smoothProgress*Math.PI)*.16;
+ const driftY=reduced?0:transitionFocus*.10;
+ const lookOffsetX=reduced?0:-driftX*.30;
+
+ camera.position.x=THREE.MathUtils.damp(camera.position.x,driftX,5.5,dt);
+ camera.position.y=THREE.MathUtils.damp(camera.position.y,3.05+driftY,5.5,dt);
+ camera.position.z=THREE.MathUtils.damp(camera.position.z,distance-travel,7,dt);
+
+ const targetFov=39-(reduced?0:chapterFocus*(width<700?2.2:3.2));
+ camera.fov=THREE.MathUtils.damp(camera.fov,targetFov,5,dt);
+ camera.updateProjectionMatrix();
+ camera.lookAt(lookOffsetX,2.65-driftY*.10,-travel);
+
  scene.fog.near=distance+1;scene.fog.far=distance+23;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
@@ -284,23 +298,24 @@ function animate(){
 
  for(let i=0;i<modelGroups.length;i++){
   const delta=Math.abs(smoothProgress-i);
-  modelGroups[i].visible=delta<1.15;
+  modelGroups[i].visible=delta<1.35;
   if(modelGroups[i].visible){
-   const focus=1-THREE.MathUtils.smoothstep(delta,0,.95);
-   const targetScale=reduced?1:.975+focus*.04;
+   const focus=1-THREE.MathUtils.smoothstep(delta,0,1.05);
+   const targetScale=reduced?1:.99+focus*.025;
    const current=modelGroups[i].scale.x||1;
-   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,5,dt));
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,4.5,dt));
   }
  }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
 }
+
 async function start(){
  try{
  renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setClearColor(0xa5b0bd);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0xa5b0bd);scene.fog=new THREE.Fog(0xa5b0bd,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
  scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=0.0001;sun.shadow.normalBias=0.02;scene.add(sun);scene.add(sun.target);
- const reflectionSize=width<700?1024:2048;
+ const reflectionSize=width<700?768:1024;
  const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xc7d0da,textureWidth:reflectionSize,textureHeight:reflectionSize,clipBias:.01});
  floor.rotation.x=-Math.PI/2;floor.position.set(0,-.14,-44);floor.renderOrder=-2;
  floor.material.transparent=true;floor.material.opacity=.28;floor.material.depthWrite=false;
