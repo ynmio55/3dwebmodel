@@ -1,4 +1,4 @@
-import {facetedStar,stoneTexture,previewStars} from './star-design.js';
+import {facetedStar,stoneTexture,crystalTexture,previewStars} from './star-design.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
@@ -9,10 +9,10 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const $ = s => document.querySelector(s);
 const clamp = THREE.MathUtils.clamp;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const defaults = { material:0, color:'#d8ad58', frame:0, sticker:0 };
+const defaults = { material:0, color:'#e6cb88', frame:0, sticker:0 };
 const state = {...defaults};
 const choices = {
- material:[['GOLD','#d8ad58'],['PLATINUM','#c2cede'],['JADE','#8fc0af'],['ROSE MARBLE','#d97b9f'],['AMETHYST','#b69cb6'],['MOONSTONE','#d3d8c3'],['SILVER','#b6bec8'],['RUBY','#bf1745']],
+ material:[['GOLD','#e6cb88'],['PLATINUM','#c2cede'],['JADE','#8fc0af'],['ROSE MARBLE','#d97b9f'],['AMETHYST','#b69cb6'],['MOONSTONE','#d3d8c3'],['SILVER','#b6bec8'],['RUBY','#bf1745']],
  color:[['RUBY','#bf1745'],['ROSE','#e29ab2'],['GOLD','#c5a063'],['PEARL','#ede4d6'],['LILAC','#b3a1cc'],['JADE','#74a89b'],['SAPPHIRE','#607fad'],['MIDNIGHT','#29263d']],
  frame:[['NO FRAME','☆'],['GOLD LATTICE','◇'],['PEARLS','◌'],['GOLD BORDER','★'],['HALF LATTICE','◈'],['SILVER LATTICE','♧'],['DOUBLE BORDER','❧'],['CROWN','♕']],
  sticker:[['NONE','○'],['STAR','✦'],['FLOWER','❀'],['DIAMOND','◇'],['BUTTERFLY','⋈'],['MOON','☾'],['SPARKLES','✳'],['LOVE','♡']]
@@ -47,7 +47,7 @@ function makeMarbleTexture(){
  for(let k=0;k<40;k++){ctx.beginPath();for(let x=0;x<=512;x+=3){const y=k*18+Math.sin(x*.013+k)*42+Math.sin(x*.057+k*3)*7;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle=`rgba(101,39,65,${.09+(k%5)*.035})`;ctx.lineWidth=.3+(k%4)*.45;ctx.stroke();}
  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
 }
-const marbleMap=stoneTexture();marble.map=marbleMap;marble.color.set(0xe4e8ee);let starPreviews=[];
+const crystalMap=crystalTexture();const marbleMap=stoneTexture();marble.map=marbleMap;marble.color.set(0xe4e8ee);let starPreviews=[];
 function column(parent,x,z,h=4,broken=false){
  const g=new THREE.Group();g.position.set(x,0,z);parent.add(g);
  mesh(new THREE.BoxGeometry(.97,.12,.97),marble,g,0,.06,0);
@@ -154,13 +154,16 @@ function updateSticker(){
  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false});const sticker=mesh(new THREE.PlaneGeometry(.5,.5),mat,stickerGroup,.27,.19,.72);sticker.userData.texture=tex;
 }
 function applyMaterial(){
- const mat=heartMesh.material;mat.color.set(state.color);mat.map=marbleMap;
- mat.metalness=[0,1,6].includes(state.material)?.58:.18;
- mat.roughness=state.material===0?.48:state.material===6?.2:.19;
- mat.clearcoat=state.material===0?.3:1;mat.transmission=state.material===4?.22:0;mat.thickness=.7;
- mat.bumpMap=marbleMap;mat.bumpScale=.018;
- mat.flatShading=true;heartMesh.geometry=mat.flatShading?facetGeometry:heartGeometry;mat.needsUpdate=true;
+ const mat=heartMesh.material,isMetal=[0,1,6].includes(state.material),isGold=state.material===0;
+ mat.color.set(state.color);mat.map=crystalMap;mat.vertexColors=true;
+ mat.metalness=isMetal?.32:.12;mat.roughness=.24;mat.clearcoat=1;mat.clearcoatRoughness=.12;
+ mat.transmission=isGold?.20:isMetal?.08:.28;mat.ior=1.46;mat.thickness=.85;
+ mat.attenuationColor.set(isGold?0xf2d693:state.color);mat.attenuationDistance=2.2;
+ mat.emissive.set(isGold?0xc69a42:state.color);mat.emissiveIntensity=isGold?.12:.035;
+ mat.bumpMap=crystalMap;mat.bumpScale=.006;mat.envMapIntensity=1.5;
+ mat.flatShading=true;heartMesh.geometry=facetGeometry;mat.needsUpdate=true;
 }
+
 function buildChoices(){
  const list=$('#choices');
  const previousFocus=list.contains(document.activeElement)?document.activeElement.getAttribute('aria-label'):null;
@@ -255,7 +258,7 @@ function animate(){
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
  for(const s of mirrorShards){s.mesh.visible=burst>.03&&burst<.99;s.mesh.position.set(s.x+Math.sin(s.phase)*burst*3,s.y+Math.cos(s.phase)*burst*2,s.z+burst*4);s.mesh.rotation.set(burst*s.phase,burst*s.phase*.6,burst);}
- for(const p of petals){p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
+ for(const p of petals){p.mesh.visible=studioBlend<.8;p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
  for(let i=0;i<modelGroups.length;i++)modelGroups[i].visible=Math.abs(smoothProgress-i)<1.15;
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
 }
@@ -267,7 +270,7 @@ async function start(){
  scene.add(new THREE.HemisphereLight(0xffffff,0x8899ad,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
  const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xb6c1d0,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
  const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
- populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:marbleMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
+ populateWorld();await loadUserModels();starPreviews=previewStars(renderer,heartGeometry,{map:crystalMap,environment:scene.environment},choices.material.map(c=>c[1]));restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
 start();
