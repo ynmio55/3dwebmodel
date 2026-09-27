@@ -259,22 +259,19 @@ function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
  smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
 
- // Cinematic chapter motion: pull back from the current scene, then push in
- // toward the next scene so each reveal feels deliberate instead of linear.
- const x=0, chapter=Math.floor(smoothProgress), phase=smoothProgress-chapter;
- const easedPhase=THREE.MathUtils.smoothstep(phase,0,1);
- const travel=(chapter+easedPhase)*22;
+ // Keep the original smooth linear travel, then layer a continuous zoom wave
+ // on top. Avoid per-chapter resets so the camera never jumps at boundaries.
+ const x=0, travel=smoothProgress*22;
  const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
  const baseDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- const arrival=Math.pow(Math.abs(Math.cos(Math.PI*phase)),2);
- const transition=Math.sin(Math.PI*phase);
- const zoomAmount=reduced?0:(width<700?1.35:1.9);
- const distance=baseDistance+transition*.85-arrival*zoomAmount;
- const cameraLift=reduced?0:transition*.32;
- const lookAhead=reduced?0:THREE.MathUtils.smoothstep(phase,.28,.92)*1.65;
+ const chapterFocus=.5+.5*Math.cos(smoothProgress*Math.PI*2);
+ const betweenFocus=1-chapterFocus;
+ const zoomAmount=reduced?0:(width<700?.72:1.05);
+ const distance=baseDistance-chapterFocus*zoomAmount;
+ const cameraLift=reduced?0:betweenFocus*.12;
 
- camera.position.set(x,3.05+cameraLift,distance-travel-lookAhead);
- camera.lookAt(x,2.65-cameraLift*.22,-travel-lookAhead*1.18);
+ camera.position.set(x,3.05+cameraLift,distance-travel);
+ camera.lookAt(x,2.65-cameraLift*.12,-travel);
  scene.fog.near=distance+1;scene.fog.far=distance+23;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
@@ -289,10 +286,10 @@ function animate(){
   const delta=Math.abs(smoothProgress-i);
   modelGroups[i].visible=delta<1.15;
   if(modelGroups[i].visible){
-   const focus=1-THREE.MathUtils.smoothstep(delta,0,.82);
-   const targetScale=reduced?1:.94+focus*.09;
+   const focus=1-THREE.MathUtils.smoothstep(delta,0,.95);
+   const targetScale=reduced?1:.975+focus*.04;
    const current=modelGroups[i].scale.x||1;
-   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,7,dt));
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,5,dt));
   }
  }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
