@@ -91,6 +91,12 @@ function makeCage(parent){
 }
 async function loadUserModels(){
  const loader=new GLTFLoader();
+ const storyModels=await Promise.all(['scene-two','scene-three'].map(name=>loader.loadAsync(import.meta.env.BASE_URL+'models/'+name+'.glb')));
+ storyModels.forEach((gltf,i)=>{
+  const root=gltf.scene;root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(Math.min(4.5/size.x,3.5/size.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.16-box.min.y,-center.z);
+  root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.78,metalness:0});o.castShadow=true;o.receiveShadow=true;}});
+  modelGroups[i+1].add(root);floatingStar(modelGroups[i+1],i===0?1.7:0,4.25,0,0xe6cb88,.3);
+ });
  const tree=await loader.loadAsync(import.meta.env.BASE_URL+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
@@ -103,7 +109,7 @@ function populateWorld(){
  for(let i=0;i<5;i++){const group=new THREE.Group();group.position.z=-i*22;scene.add(group);modelGroups.push(group);
  column(group,-4.1,-1.7,i===4?4.8:5.3);column(group,4.0,-1.0,i===4?2.7:4.7,true);column(group,-2.8,-6,3.2,true);column(group,3.1,-8,5.0);island(group,i===4?1.8:2.3);
  }
- mirrorGroup=makeMirror(modelGroups[0]);makeSculpture(modelGroups[1]);cage=makeCage(modelGroups[2]);
+ mirrorGroup=makeMirror(modelGroups[0]);cage=new THREE.Group();modelGroups[2].add(cage);
  letter=new THREE.Group();letter.position.set(0,2.1,0);modelGroups[3].add(letter);
  const paper=new THREE.MeshStandardMaterial({color:0xfff5e5,roughness:.8,side:THREE.DoubleSide});mesh(new THREE.BoxGeometry(1.3,.85,.04),paper,letter);const flap=mesh(new THREE.ConeGeometry(.73,.55,3),paper,letter,0,.13,.07);flap.rotation.set(Math.PI/2,0,Math.PI);const seal=mesh(heartGeometry,new THREE.MeshStandardMaterial({color:0xac2048,roughness:.45}),letter,0,-.04,.14);seal.scale.setScalar(.13);
  heart=new THREE.Group();heart.position.set(0,2.65,0);modelGroups[4].add(heart);
