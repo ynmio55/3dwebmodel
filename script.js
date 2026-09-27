@@ -18,7 +18,7 @@ const choices = {
 };
 let category='material', renderer, scene, camera, heart, heartMesh, frameGroup, stickerGroup;
 let targetRotation=0.12, targetTilt=-.08, scrollProgress=0, smoothProgress=0, dragging=false, dragX=0,dragY=0;
-let width=innerWidth,height=innerHeight, pendingCapture=false, audioContext, soundOn=false;
+let width=innerWidth,height=innerHeight, pendingCapture=false, bgmAudio, soundOn=false;
 let renderFrame=0, disposed=false, sunlight;
 let stageLayout={centerX:innerWidth/2,centerY:innerHeight/2,distance:10.4};
 const clock = new THREE.Clock();
@@ -283,7 +283,34 @@ function bindUI(){
  $('#nativeShare').addEventListener('click',async()=>{try{await navigator.share({title:'Your Tha Rae star',url:designURL()});}catch(error){if(error.name!=='AbortError')$('#status').textContent='Sharing is unavailable. Copy the link below instead.';}});
  $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(designURL());$('#status').textContent='Your design link is copied.';}catch{const input=$('#linkFallback');input.value=designURL();input.hidden=false;input.focus();input.select();$('#status').textContent='Select and copy this link to share your star.';}});
  $('#download').addEventListener('click',()=>{pendingCapture=true;$('#download').disabled=true;$('#status').textContent='Preparing your image…';});
- $('#sound').addEventListener('click',async()=>{try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();const gain=audioContext.createGain();gain.gain.value=.009;gain.connect(audioContext.destination);for(const f of [174.61,220,261.63]){const oscillator=audioContext.createOscillator();oscillator.frequency.value=f;oscillator.connect(gain);oscillator.start();}}soundOn=!soundOn;await audioContext[soundOn?'resume':'suspend']();$('#sound').innerHTML=`SOUND ${soundOn?'ON':'OFF'} <span>⌁</span>`;$('#sound').setAttribute('aria-pressed',String(soundOn));}catch{$('#sound').textContent='SOUND UNAVAILABLE';}});
+ $('#sound').addEventListener('click',async()=>{
+  try{
+   if(!bgmAudio){
+    const baseUrl=(typeof import.meta!=='undefined'&&import.meta.env?.BASE_URL)||'./';
+    bgmAudio=new Audio(baseUrl+'christmas-music.mp3');
+    bgmAudio.addEventListener('error',()=>{
+     if(!bgmAudio.src.includes('public/')){
+      bgmAudio.src='./public/christmas-music.mp3';
+      if(soundOn)bgmAudio.play().catch(()=>{});
+     }
+    });
+    bgmAudio.loop=true;
+    bgmAudio.volume=0.5;
+   }
+   if(soundOn){
+    bgmAudio.pause();
+    soundOn=false;
+   }else{
+    await bgmAudio.play();
+    soundOn=true;
+   }
+   $('#sound').innerHTML=`SOUND ${soundOn?'ON':'OFF'} <span>⌁</span>`;
+   $('#sound').setAttribute('aria-pressed',String(soundOn));
+  }catch(err){
+   console.error(err);
+   $('#sound').textContent='SOUND UNAVAILABLE';
+  }
+ });
  addEventListener('resize',resize);addEventListener('scroll',readScroll,{passive:true});
  document.fonts?.ready.then(()=>{readScroll();});
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#errorText').textContent='The 3D connection was interrupted. Reload to continue.';$('#error').hidden=false;cancelAnimationFrame(renderFrame);});
