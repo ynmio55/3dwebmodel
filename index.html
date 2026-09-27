@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f2ef" />
+  <title>Amore — Make a little magic</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="room" aria-hidden="true"><div class="column column-a"></div><div class="column column-b"></div><div class="column column-c"></div><div class="floor"></div></div>
+  <div class="petals" aria-hidden="true"></div>
+  <header class="site-header"><a href="#home" class="brand" aria-label="Amore home">amore<span class="brand-star">✳</span><small>STUDIO</small></a><nav><a href="#home">HOME</a><a href="#story">OUR STORY</a><a href="#create">CREATE</a></nav><span class="edition">A LITTLE PIECE OF FOREVER <span>↗</span></span></header>
+  <main>
+    <section class="hero" id="home"><div class="hero-content"><p class="eyebrow">AN EXPERIENCE MADE WITH LOVE · NO. 001</p><h1>THE <em>STORY</em></h1><p class="hero-subtitle">Every love has a shape. Make yours unforgettable.</p><button id="begin" class="dark-button">CREATE YOUR HEART <span>↗</span></button></div><div class="hero-ornament" aria-hidden="true">♡</div><span class="side-note">SCROLL TO DISCOVER — 01 / 03</span></section>
+    <section class="story" id="story"><p class="eyebrow">A CANVAS FOR YOUR FEELINGS</p><h2>Some things are better<br /><i>felt than said.</i></h2><p>Give your story a shape. Choose every detail, make it yours, and keep a little piece of it forever.</p><button id="storyBegin" class="text-button">LET'S MAKE SOMETHING BEAUTIFUL <span>↗</span></button></section>
+    <section class="studio" id="create"><div class="studio-heading"><p class="eyebrow">THE HEART STUDIO · 03 / 03</p><h2>Make it <i>yours.</i></h2><p>Every detail tells a part of your story.</p></div><div class="studio-layout"><aside class="categories" aria-label="Customization category"><button class="category active" data-category="material"><span>01</span> MATERIAL</button><button class="category" data-category="color"><span>02</span> COLOR</button><button class="category" data-category="frame"><span>03</span> FRAME</button><button class="category" data-category="sparkle"><span>04</span> SPARKLE</button></aside><div class="heart-stage"><canvas id="heartCanvas" aria-label="Interactive 3D heart. Drag to rotate." role="img"></canvas><div class="stage-glow"></div><span class="drag-hint">⟲ &nbsp; DRAG TO ROTATE</span></div><aside class="options"><div class="options-label" id="optionsLabel">CHOOSE A MATERIAL</div><div class="option-grid" id="optionGrid"></div><div class="selection-name" id="selectionName">PORCELAIN</div></aside></div><div class="studio-footer"><span>MADE FOR THE MOMENTS THAT MATTER</span><button id="save" class="dark-button">FINISH & SAVE <span>↗</span></button><span>ONE OF A KIND, JUST LIKE YOU</span></div></section>
+  </main>
+  <footer><span>amore ✳ STUDIO</span><span>MADE WITH LOVE, ALWAYS.</span><span>© 2026 AMORE</span></footer>
+  <dialog id="savedDialog"><div class="dialog-inner"><button class="dialog-close" id="closeDialog" aria-label="Close">×</button><p class="eyebrow">A LITTLE PIECE OF FOREVER</p><h2>Your heart is <i>ready.</i></h2><p>Save your creation as an image or share this design with someone special.</p><div class="dialog-actions"><button class="dark-button" id="download">DOWNLOAD IMAGE ↗</button><button class="outline-button" id="share">SHARE DESIGN ↗</button></div><p class="dialog-status" id="dialogStatus" role="status"></p></div></dialog>
+  <script src="./script.js"></script>
+</body>
+</html>
