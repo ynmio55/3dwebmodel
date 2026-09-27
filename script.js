@@ -8,12 +8,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const $ = s => document.querySelector(s);
 const clamp = THREE.MathUtils.clamp;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const defaults = { material:0, color:'#e9ddd2', frame:0, sticker:0 };
+const defaults = { material:0, color:'#d8ad58', frame:0, sticker:0 };
 const state = {...defaults};
 const choices = {
- material:[['PORCELAIN','#e9ddd2'],['BLUE QUARTZ','#a5b4d0'],['JADE','#8fc0af'],['ROSE MARBLE','#d97b9f'],['AMETHYST','#b69cb6'],['MOONSTONE','#d3d8c3'],['SILVER','#b6bec8'],['RUBY','#bf1745']],
+ material:[['GOLD','#d8ad58'],['PLATINUM','#c2cede'],['JADE','#8fc0af'],['ROSE MARBLE','#d97b9f'],['AMETHYST','#b69cb6'],['MOONSTONE','#d3d8c3'],['SILVER','#b6bec8'],['RUBY','#bf1745']],
  color:[['RUBY','#bf1745'],['ROSE','#e29ab2'],['GOLD','#c5a063'],['PEARL','#ede4d6'],['LILAC','#b3a1cc'],['JADE','#74a89b'],['SAPPHIRE','#607fad'],['MIDNIGHT','#29263d']],
- frame:[['NO FRAME','♡'],['GOLD LATTICE','◇'],['PEARLS','◌'],['GOLD BORDER','♥'],['HALF LATTICE','◈'],['SILVER LATTICE','♧'],['DOUBLE BORDER','❧'],['CROWN','♕']],
+ frame:[['NO FRAME','☆'],['GOLD LATTICE','◇'],['PEARLS','◌'],['GOLD BORDER','★'],['HALF LATTICE','◈'],['SILVER LATTICE','♧'],['DOUBLE BORDER','❧'],['CROWN','♕']],
  sticker:[['NONE','○'],['STAR','✦'],['FLOWER','❀'],['DIAMOND','◇'],['BUTTERFLY','⋈'],['MOON','☾'],['SPARKLES','✳'],['LOVE','♡']]
 };
 let category='material', renderer, scene, camera, heart, heartMesh, frameGroup, stickerGroup;
@@ -31,15 +31,15 @@ let heartGeometry, facetGeometry, mirrorGroup, introHeart, cage, letter;
 function mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function sphere(parent,x,y,z,sx,sy,sz,material=marble){const m=mesh(new THREE.SphereGeometry(1,16,12),material,parent,x,y,z);m.scale.set(sx,sy,sz);return m;}
 function tube(points,radius,parent,material=gold,closed=false){return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points,closed),Math.max(16,points.length*4),radius,6,closed),material,parent);}
-function heartPoint(t,r=1,z=0){return new THREE.Vector3(16*Math.sin(t)**3/17*r,(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17*r+.13,z);}
-function makeHeartGeometry(n=64,rings=22){
- const pos=[],uv=[],indices=[];
- for(let j=0;j<=rings;j++){
-  const a=j/rings*Math.PI,r=Math.sin(a),z=.57*Math.cos(a);
-  for(let i=0;i<=n;i++){const t=i/n*Math.PI*2,p=heartPoint(t,r,z);pos.push(p.x,p.y,p.z);uv.push(i/n,j/rings);}
- }
- for(let j=0;j<rings;j++)for(let i=0;i<n;i++){const a=j*(n+1)+i,b=a+n+1;indices.push(a,a+1,b,a+1,b+1,b);}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
+function heartPoint(t,r=1,z=0){
+ const u=((t/(Math.PI*2)*10)%10+10)%10,i=Math.floor(u),f=u-i;
+ const p=k=>{const a=k*Math.PI/5,rad=k%2?.45:1;return new THREE.Vector3(Math.sin(a)*rad,Math.cos(a)*rad,z);};
+ return p(i).lerp(p(i+1),f).multiply(new THREE.Vector3(r,r,1));
+}
+function makeHeartGeometry(){
+ const shape=new THREE.Shape();
+ for(let i=0;i<10;i++){const p=heartPoint(i*Math.PI/5);i?shape.lineTo(p.x,p.y):shape.moveTo(p.x,p.y);}shape.closePath();
+ const g=new THREE.ExtrudeGeometry(shape,{depth:.28,bevelEnabled:true,bevelThickness:.15,bevelSize:.08,bevelSegments:2,steps:1});g.center();return g;
 }
 function makeMarbleTexture(){
  const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#eee3e7';ctx.fillRect(0,0,512,512);
@@ -72,35 +72,35 @@ function makeMirror(parent){
  return g;
 }
 let sculptureReady;
+const storyStars=[];
+function floatingStar(parent,x,y,z,color=0xe6b350,size=.45){
+ const m=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color,metalness:.58,roughness:.27,clearcoat:1,emissive:color,emissiveIntensity:.12}),parent,x,y,z);m.scale.setScalar(size);storyStars.push(m);return m;
+}
 function makeSculpture(parent){
  const group=new THREE.Group();parent.add(group);
- sculptureReady=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/cupid-psyche.glb`).then(gltf=>{
-  const statue=gltf.scene;
-  statue.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(statue),size=box.getSize(new THREE.Vector3());
-  const scale=4.4/Math.max(size.x,size.y);
-  statue.scale.multiplyScalar(scale);
-  statue.updateMatrixWorld(true);
-  box.setFromObject(statue);
-  const center=box.getCenter(new THREE.Vector3());
-  statue.position.x-=center.x;statue.position.z-=center.z;statue.position.y+=.12-box.min.y;
-  const material=new THREE.MeshStandardMaterial({color:0xe4d4bf,roughness:.62,metalness:0,envMapIntensity:.35});
-  statue.traverse(obj=>{if(obj.isMesh){obj.material=material;obj.castShadow=true;obj.receiveShadow=true;}});
-  group.add(statue);
- });
+ for(let i=0;i<7;i++){const x=(i-3)*.6;mesh(new THREE.CylinderGeometry(.018,.018,1.5+(i%3)*.2,6),gold,group,x,.8,-Math.abs(x)*.3);floatingStar(group,x,1.8+(i%3)*.25,-Math.abs(x)*.3,[0xe7b44c,0x358e98,0xc65373][i%3],.3);}
  return group;
 }
 function makeCage(parent){
  const group=new THREE.Group();parent.add(group);
- mesh(new THREE.CylinderGeometry(.84,.92,.2,48),marble,group,0,.22,0);
- for(let i=0;i<24;i++){const a=i/24*Math.PI*2,x=Math.sin(a)*.77,z=Math.cos(a)*.77;
- mesh(new THREE.CylinderGeometry(.013,.013,1.7,5),gold,group,x,1.15,z);
- const pts=[];for(let j=0;j<=16;j++){const t=j/16*Math.PI/2;pts.push(new THREE.Vector3(Math.sin(a)*.77*Math.cos(t),2+.6*Math.sin(t),Math.cos(a)*.77*Math.cos(t)));}tube(pts,.012,group,gold);
- }
- for(const y of [.36,.61,1.9,2.0]){const ring=mesh(new THREE.TorusGeometry(.79,.025,6,64),gold,group,0,y,0);ring.rotation.x=Math.PI/2;}
- const top=mesh(new THREE.TorusGeometry(.09,.015,8,24),gold,group,0,2.73,0);
- const little=mesh(heartGeometry,new THREE.MeshStandardMaterial({color:0xc24a67,roughness:.4}),group,0,1.2,0);little.scale.setScalar(.27);
+ floatingStar(group,0,3.1,0,0xf0bf54,.85);
+ const ring=mesh(new THREE.TorusGeometry(1.35,.025,8,70),gold,group,0,3.1,-.2);
+ for(let i=0;i<5;i++){const a=i*Math.PI*2/5;tube([new THREE.Vector3(Math.sin(a)*1.1,3.1+Math.cos(a)*1.1,0),new THREE.Vector3(Math.sin(a)*1.7,3.1+Math.cos(a)*1.7,0)],.012,group,gold);}
  return group;
+}
+async function loadUserModels(){
+ const loader=new GLTFLoader();
+ const star=await loader.loadAsync(import.meta.env.BASE_URL+'models/star.glb');
+ let geometry;
+ star.scene.updateMatrixWorld(true);star.scene.traverse(o=>{if(o.isMesh&&!geometry)geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);});
+ geometry.computeBoundingBox();const size=geometry.boundingBox.getSize(new THREE.Vector3());geometry.center();geometry.scale(2/Math.max(size.x,size.y),2/Math.max(size.x,size.y),2/Math.max(size.x,size.y));
+ const coords=geometry.getAttribute('position'),uv=[];for(let i=0;i<coords.count;i++)uv.push(coords.getX(i)/2+.5,coords.getY(i)/2+.5);geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ heartGeometry=geometry;facetGeometry=geometry;heartMesh.geometry=geometry;introHeart.geometry=geometry;storyStars.forEach(o=>o.geometry=geometry);
+ const tree=await loader.loadAsync(import.meta.env.BASE_URL+'models/tree.glb');
+ const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
+ root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
+ modelGroups[3].add(root);letter.visible=false;
+ floatingStar(modelGroups[3],0,3.45,0,0xefbe55,.38);
 }
 function populateWorld(){
  heartGeometry=makeHeartGeometry();facetGeometry=makeHeartGeometry(22,10).toNonIndexed();facetGeometry.computeVertexNormals();
@@ -114,8 +114,8 @@ function populateWorld(){
  heartMesh=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:state.color,metalness:.05,roughness:.35,clearcoat:.65}),heart);heartMesh.scale.setScalar(1.2);
  frameGroup=new THREE.Group();stickerGroup=new THREE.Group();heart.add(frameGroup,stickerGroup);
  const petalShape=new THREE.Shape();petalShape.moveTo(0,-.09);petalShape.bezierCurveTo(-.14,0,-.09,.15,.02,.12);petalShape.bezierCurveTo(.15,.06,.05,-.06,0,-.09);
- const petalGeo=new THREE.ShapeGeometry(petalShape);const pmat=new THREE.MeshStandardMaterial({color:0xc31042,roughness:.43,metalness:.1,side:THREE.DoubleSide});
- for(let i=0;i<170;i++){const p=mesh(petalGeo,pmat,scene);const baseX=(i*17.73)%108-10,baseZ=-8+(i*7.3)%15;petals.push({mesh:p,x:baseX,y:(i*2.83)%7,z:baseZ,phase:i*2.73,speed:.11+(i%5)*.045});p.scale.setScalar(.5+(i%7)*.12);}
+ const petalGeo=new THREE.ShapeGeometry(petalShape);const pmat=new THREE.MeshStandardMaterial({color:0xc79c46,roughness:.43,metalness:.1,side:THREE.DoubleSide});
+ for(let i=0;i<170;i++){const p=mesh(petalGeo,pmat,scene);const baseX=-7+(i*7.3)%14,baseZ=8-(i*17.73)%108;petals.push({mesh:p,x:baseX,y:(i*2.83)%7,z:baseZ,phase:i*2.73,speed:.11+(i%5)*.045});p.scale.setScalar(.5+(i%7)*.12);}
  const shardGeo=new THREE.TetrahedronGeometry(.17,0);for(let i=0;i<65;i++){const shard=mesh(shardGeo,i%3===0?gold:paper,modelGroups[0]);shard.visible=false;mirrorShards.push({mesh:shard,x:Math.sin(i*3.1)*1.1,y:2.7+Math.cos(i*2.3)*1.5,z:Math.sin(i*2)*.4,phase:i});}
 }
 function clearGroup(group){while(group.children.length){const obj=group.children[0];group.remove(obj);obj.traverse(child=>{if(child.geometry)child.geometry.dispose();if(child.material&&![gold,silver,pearl,marble].includes(child.material)){child.material.map?.dispose();child.material.dispose();}});}}
@@ -154,7 +154,7 @@ function updateSticker(){
 }
 function applyMaterial(){
  const mat=heartMesh.material;mat.color.set(state.color);mat.map=[3,4].includes(state.material)?marbleMap:null;
- mat.metalness=state.material===6?.92:state.material===1?.28:.04;
+ mat.metalness=[0,1,6].includes(state.material)?.85:.15;
  mat.roughness=state.material===0?.48:state.material===6?.2:.19;
  mat.clearcoat=state.material===0?.3:1;mat.transmission=state.material===4?.22:0;mat.thickness=.7;
  mat.bumpMap=[3,4].includes(state.material)?marbleMap:null;mat.bumpScale=.035;
@@ -216,6 +216,7 @@ function bindUI(){
  $('#reset').addEventListener('click',()=>{Object.assign(state,defaults);targetRotation=.12;targetTilt=-.08;applyMaterial();updateFrame();updateSticker();buildChoices();});
  $('#frontView').addEventListener('click',()=>{targetRotation=.12;targetTilt=-.08;});
  const canvas=$('#world');let activePointer=null;
+ let storyDown=null;canvas.addEventListener('pointerdown',e=>{storyDown={x:e.clientX,y:e.clientY};});canvas.addEventListener('pointerup',e=>{if(scrollProgress>=3.8||!storyDown||Math.hypot(e.clientX-storyDown.x,e.clientY-storyDown.y)>12)return;const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(e.clientX/width*2-1,-e.clientY/height*2+1),camera);const hits=ray.intersectObjects([introHeart,...storyStars].filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;}));if(hits.length)document.querySelectorAll('.chapter')[Math.min(4,Math.round(scrollProgress)+1)].scrollIntoView({behavior:reduced?'instant':'smooth'});});
  canvas.addEventListener('pointerdown',e=>{if(scrollProgress<3.8||!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;activePointer=e.pointerId;dragging=true;dragX=e.clientX;dragY=e.clientY;canvas.setPointerCapture(e.pointerId);});
  canvas.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==activePointer)return;targetRotation+=(e.clientX-dragX)*.009;if(e.pointerType!=='touch')targetTilt=clamp(targetTilt+(e.clientY-dragY)*.006,-.7,.7);dragX=e.clientX;dragY=e.clientY;});
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>{if(e.pointerId===activePointer){dragging=false;activePointer=null;}});
@@ -228,8 +229,8 @@ function bindUI(){
  });
  $('#closeShare').addEventListener('click',()=>$('#shareDialog').close());
  $('#shareDialog').addEventListener('close',()=>$('#finish').focus({preventScroll:true}));
- $('#nativeShare').addEventListener('click',async()=>{try{await navigator.share({title:'A heart made for you',url:designURL()});}catch(error){if(error.name!=='AbortError')$('#status').textContent='Sharing is unavailable. Copy the link below instead.';}});
- $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(designURL());$('#status').textContent='Your design link is copied.';}catch{const input=$('#linkFallback');input.value=designURL();input.hidden=false;input.focus();input.select();$('#status').textContent='Select and copy this link to share your heart.';}});
+ $('#nativeShare').addEventListener('click',async()=>{try{await navigator.share({title:'Your Tha Rae star',url:designURL()});}catch(error){if(error.name!=='AbortError')$('#status').textContent='Sharing is unavailable. Copy the link below instead.';}});
+ $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(designURL());$('#status').textContent='Your design link is copied.';}catch{const input=$('#linkFallback');input.value=designURL();input.hidden=false;input.focus();input.select();$('#status').textContent='Select and copy this link to share your star.';}});
  $('#download').addEventListener('click',()=>{pendingCapture=true;$('#download').disabled=true;$('#status').textContent='Preparing your image…';});
  $('#sound').addEventListener('click',async()=>{try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();const gain=audioContext.createGain();gain.gain.value=.009;gain.connect(audioContext.destination);for(const f of [174.61,220,261.63]){const oscillator=audioContext.createOscillator();oscillator.frequency.value=f;oscillator.connect(gain);oscillator.start();}}soundOn=!soundOn;await audioContext[soundOn?'resume':'suspend']();$('#sound').innerHTML=`SOUND ${soundOn?'ON':'OFF'} <span>⌁</span>`;$('#sound').setAttribute('aria-pressed',String(soundOn));}catch{$('#sound').textContent='SOUND UNAVAILABLE';}});
  addEventListener('resize',resize);addEventListener('scroll',readScroll,{passive:true});
@@ -238,7 +239,7 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAnimationFrame(renderFrame);else{clock.getDelta();animate();}});
 }
 function resize(){width=innerWidth;height=innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,width<700?1.4:1.7));renderer.setSize(width,height);readScroll();}
-function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your heart.',out.width/2,out.height*.92);out.toBlob(blob=>{$('#download').disabled=false;if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-heart-story.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your heart image is ready.';},'image/png');}
+function saveImage(){renderer.render(scene,camera);const source=renderer.domElement;const out=document.createElement('canvas');out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');ctx.drawImage(source,0,0);ctx.fillStyle='#322334';ctx.font=`${Math.round(out.width*.022)}px Georgia`;ctx.textAlign='center';ctx.fillText('A little piece of your star.',out.width/2,out.height*.92);out.toBlob(blob=>{$('#download').disabled=false;if(!blob){$('#status').textContent='Could not save the image. Please try again.';return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-tha-rae-star.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('#status').textContent='Your star image is ready.';},'image/png');}
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
  smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
@@ -249,7 +250,7 @@ function animate(){
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
- introHeart.rotation.y=reduced?.2:time*.25;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
+ storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
  for(const s of mirrorShards){s.mesh.visible=burst>.03&&burst<.99;s.mesh.position.set(s.x+Math.sin(s.phase)*burst*3,s.y+Math.cos(s.phase)*burst*2,s.z+burst*4);s.mesh.rotation.set(burst*s.phase,burst*s.phase*.6,burst);}
  for(const p of petals){p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
@@ -264,7 +265,7 @@ async function start(){
  scene.add(new THREE.HemisphereLight(0xffffff,0xd0bfbc,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
  const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
  const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
- populateWorld();await sculptureReady;restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
+ populateWorld();await loadUserModels();restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='The 3D scene could not load. Check your connection and try again. Hardware acceleration must be enabled.';$('#error').hidden=false;}
 }
 start();
