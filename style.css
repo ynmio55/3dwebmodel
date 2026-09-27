@@ -14,3 +14,6 @@
 @media(max-height:520px) and (min-width:701px){.design-panel{width:128px!important;top:20%!important}#choices{gap:7px!important}.material-menu{top:28%;gap:10px}.material-menu button{min-height:32px}.studio-heading{top:68%!important}.studio-bottom{bottom:1%!important}}
 
 .studio #finish{pointer-events:auto}
+
+/* Let the 3D scene remain visible behind the navigation. */
+.site-header{background:transparent!important;border-bottom:0!important;box-shadow:none!important;backdrop-filter:none!important}

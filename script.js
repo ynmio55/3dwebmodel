@@ -91,20 +91,15 @@ function makeCage(parent){
 }
 async function loadUserModels(){
  const loader=new GLTFLoader();
- const star=await loader.loadAsync(import.meta.env.BASE_URL+'models/star.glb');
- let geometry;
- star.scene.updateMatrixWorld(true);star.scene.traverse(o=>{if(o.isMesh&&!geometry)geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);});
- geometry.computeBoundingBox();const size=geometry.boundingBox.getSize(new THREE.Vector3());geometry.center();geometry.scale(2/Math.max(size.x,size.y),2/Math.max(size.x,size.y),2/Math.max(size.x,size.y));
- const coords=geometry.getAttribute('position'),uv=[];for(let i=0;i<coords.count;i++)uv.push(coords.getX(i)/2+.5,coords.getY(i)/2+.5);geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
- heartGeometry=facetedStar();facetGeometry=heartGeometry;heartMesh.geometry=heartGeometry;introHeart.geometry=geometry;storyStars.forEach(o=>o.geometry=geometry);
  const tree=await loader.loadAsync(import.meta.env.BASE_URL+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
  root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
  modelGroups[3].add(root);letter.visible=false;
  floatingStar(modelGroups[3],0,3.45,0,0xefbe55,.38);
+ for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
 }
 function populateWorld(){
- heartGeometry=makeHeartGeometry();facetGeometry=makeHeartGeometry(22,10).toNonIndexed();facetGeometry.computeVertexNormals();
+ heartGeometry=facetedStar();facetGeometry=heartGeometry;
  for(let i=0;i<5;i++){const group=new THREE.Group();group.position.z=-i*22;scene.add(group);modelGroups.push(group);
  column(group,-4.1,-1.7,i===4?4.8:5.3);column(group,4.0,-1.0,i===4?2.7:4.7,true);column(group,-2.8,-6,3.2,true);column(group,3.1,-8,5.0);island(group,i===4?1.8:2.3);
  }
