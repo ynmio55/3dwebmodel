@@ -258,18 +258,43 @@ function saveImage(){renderer.render(scene,camera);const source=renderer.domElem
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
  smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
- const x=0, travel=smoothProgress*22, studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
- const distance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- camera.position.set(x,3.05,distance-travel);camera.lookAt(x,2.65,-travel);
+
+ // Cinematic chapter motion: pull back from the current scene, then push in
+ // toward the next scene so each reveal feels deliberate instead of linear.
+ const x=0, chapter=Math.floor(smoothProgress), phase=smoothProgress-chapter;
+ const easedPhase=THREE.MathUtils.smoothstep(phase,0,1);
+ const travel=(chapter+easedPhase)*22;
+ const studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
+ const baseDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
+ const arrival=Math.pow(Math.abs(Math.cos(Math.PI*phase)),2);
+ const transition=Math.sin(Math.PI*phase);
+ const zoomAmount=reduced?0:(width<700?1.35:1.9);
+ const distance=baseDistance+transition*.85-arrival*zoomAmount;
+ const cameraLift=reduced?0:transition*.32;
+ const lookAhead=reduced?0:THREE.MathUtils.smoothstep(phase,.28,.92)*1.65;
+
+ camera.position.set(x,3.05+cameraLift,distance-travel-lookAhead);
+ camera.lookAt(x,2.65-cameraLift*.22,-travel-lookAhead*1.18);
  scene.fog.near=distance+1;scene.fog.far=distance+23;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
  sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
+
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
  for(const s of mirrorShards){s.mesh.visible=burst>.03&&burst<.99;s.mesh.position.set(s.x+Math.sin(s.phase)*burst*3,s.y+Math.cos(s.phase)*burst*2,s.z+burst*4);s.mesh.rotation.set(burst*s.phase,burst*s.phase*.6,burst);}
  for(const p of petals){p.mesh.visible=studioBlend<.8;p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
- for(let i=0;i<modelGroups.length;i++)modelGroups[i].visible=Math.abs(smoothProgress-i)<1.15;
+
+ for(let i=0;i<modelGroups.length;i++){
+  const delta=Math.abs(smoothProgress-i);
+  modelGroups[i].visible=delta<1.15;
+  if(modelGroups[i].visible){
+   const focus=1-THREE.MathUtils.smoothstep(delta,0,.82);
+   const targetScale=reduced?1:.94+focus*.09;
+   const current=modelGroups[i].scale.x||1;
+   modelGroups[i].scale.setScalar(THREE.MathUtils.damp(current,targetScale,7,dt));
+  }
+ }
  renderer.render(scene,camera);if(pendingCapture){pendingCapture=false;saveImage();}
 }
 async function start(){
