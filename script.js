@@ -282,27 +282,37 @@ function animate(){
  // Alternate sides at each chapter, crossing the centre between scenes.
  // Blend back to centre for the final design studio.
  const walkAmp=reduced?0:(width<700?1.05:1.85);
- const targetX=Math.cos(smoothProgress*Math.PI)*walkAmp*(1-studioBlend);
  const stride=.5-.5*Math.cos(smoothProgress*Math.PI*2);
- const targetY=THREE.MathUtils.lerp(width<700?2.15:2.0,3.05,studioBlend)+(reduced?0:stride*.06);
 
- // Keep a slight forward push, but avoid zoom pulses. The sense of movement
- // comes from actually passing the scene, not from scaling the image.
- const distance=baseDistance-(reduced?0:stride*(width<700?.18:.28));
+ // Keep the landing page exactly like the original centered composition,
+ // then blend into the low left/right walk-through only after leaving HOME.
+ const storyBlend=THREE.MathUtils.smoothstep(smoothProgress,.18,.72);
+ const walkX=Math.cos(smoothProgress*Math.PI)*walkAmp*(1-studioBlend);
+ const targetX=THREE.MathUtils.lerp(0,walkX,storyBlend);
+ const walkY=THREE.MathUtils.lerp(width<700?2.15:2.0,3.05,studioBlend)+(reduced?0:stride*.06);
+ const targetY=THREE.MathUtils.lerp(3.05,walkY,storyBlend);
+
+ // HOME keeps the old camera distance. Story chapters use the closer walk path.
+ const homeDistance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
+ const walkDistance=baseDistance-(reduced?0:stride*(width<700?.18:.28));
+ const distance=THREE.MathUtils.lerp(homeDistance,walkDistance,storyBlend);
  const targetZ=distance-travel;
 
  camera.position.x=THREE.MathUtils.damp(camera.position.x,targetX,5.2,dt);
  camera.position.y=THREE.MathUtils.damp(camera.position.y,targetY,5.2,dt);
  camera.position.z=THREE.MathUtils.damp(camera.position.z,targetZ,6.5,dt);
 
- // Look inward toward each scene as we pass it. This creates the gallery-like
- // left/right reveal instead of flying over or straight through the centre.
- const lookX=THREE.MathUtils.lerp(0,-targetX*.48,1-studioBlend);
- const lookY=THREE.MathUtils.lerp(width<700?2.3:2.35,2.65,studioBlend);
- const lookZ=-travel-(reduced?0:stride*.65);
+ // HOME looks straight at the original hero. After scrolling, turn toward
+ // alternating scenes as the camera walks past them.
+ const walkLookX=THREE.MathUtils.lerp(0,-walkX*.48,1-studioBlend);
+ const lookX=THREE.MathUtils.lerp(0,walkLookX,storyBlend);
+ const walkLookY=THREE.MathUtils.lerp(width<700?2.3:2.35,2.65,studioBlend);
+ const lookY=THREE.MathUtils.lerp(2.65,walkLookY,storyBlend);
+ const lookZ=-travel-(reduced?0:stride*.65*storyBlend);
  camera.lookAt(lookX,lookY,lookZ);
 
- const targetFov=THREE.MathUtils.lerp(width<700?40:38.5,39,studioBlend);
+ const walkFov=THREE.MathUtils.lerp(width<700?40:38.5,39,studioBlend);
+ const targetFov=THREE.MathUtils.lerp(39,walkFov,storyBlend);
  camera.fov=THREE.MathUtils.damp(camera.fov,targetFov,5,dt);
  camera.updateProjectionMatrix();
 
