@@ -57,3 +57,6 @@ npm run preview
 - รองรับ reduced motion และ increased contrast
 
 รันทดสอบการคำนวณพื้นที่หัวใจและตำแหน่งการเลื่อนด้วย `npm test` (เป็นการทดสอบตรรกะ ไม่ใช่ภาพจากอุปกรณ์จริง)
+
+
+Cloudflare Pages deployment is configured with Vite and redeploys from main.
