@@ -100,9 +100,17 @@ async function loadUserModels(){
  });
  const tree=await loader.loadAsync(baseUrl+'models/tree.glb');
  const root=tree.scene;root.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(root);const sz=box.getSize(new THREE.Vector3());root.scale.multiplyScalar(3/Math.max(sz.x,sz.y));root.updateMatrixWorld(true);box.setFromObject(root);const center=box.getCenter(new THREE.Vector3());root.position.set(-center.x,.15-box.min.y,-center.z);
- root.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshStandardMaterial({color:0x348779,roughness:.65,metalness:.15});o.castShadow=true;o.receiveShadow=true;}});
+ root.traverse(o=>{if(o.isMesh){
+  const isTreeStar=/star/i.test(o.name||'');
+  o.material=new THREE.MeshStandardMaterial({
+   color:isTreeStar?0xd4aa4f:0x496f5d,
+   roughness:isTreeStar?.38:.82,
+   metalness:isTreeStar?.18:.02
+  });
+  o.castShadow=true;o.receiveShadow=true;
+ }});
  modelGroups[3].add(root);letter.visible=false;
- floatingStar(modelGroups[3],0,3.45,0,0xefbe55,.38);
+ floatingStar(modelGroups[3],0,3.45,0,0xd4aa4f,.38);
  for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
 }
 function populateWorld(){
