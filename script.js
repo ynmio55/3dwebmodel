@@ -94,7 +94,7 @@ function makeCage(parent){
 }
 function populateWorld(){
  heartGeometry=makeHeartGeometry();facetGeometry=makeHeartGeometry(22,10).toNonIndexed();facetGeometry.computeVertexNormals();
- for(let i=0;i<5;i++){const group=new THREE.Group();group.position.x=i*22;scene.add(group);modelGroups.push(group);
+ for(let i=0;i<5;i++){const group=new THREE.Group();group.position.z=-i*22;scene.add(group);modelGroups.push(group);
  column(group,-4.1,-1.7,i===4?4.8:5.3);column(group,4.0,-1.0,i===4?2.7:4.7,true);column(group,-2.8,-6,3.2,true);column(group,3.1,-8,5.0);island(group,i===4?1.8:2.3);
  }
  mirrorGroup=makeMirror(modelGroups[0]);makeSculpture(modelGroups[1]);cage=makeCage(modelGroups[2]);
@@ -232,12 +232,12 @@ function saveImage(){renderer.render(scene,camera);const source=renderer.domElem
 function animate(){
  if(disposed)return;renderFrame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),time=clock.elapsedTime;
  smoothProgress=THREE.MathUtils.damp(smoothProgress,scrollProgress,reduced?30:6,dt);
- const x=smoothProgress*22, studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
+ const x=0, travel=smoothProgress*22, studioBlend=clamp((smoothProgress-3.25)/.75,0,1);
  const distance=THREE.MathUtils.lerp(width<700?13.5:10.4,stageLayout.distance,studioBlend);
- camera.position.set(x,3.05,distance);camera.lookAt(x,2.65,0);
+ camera.position.set(x,3.05,distance-travel);camera.lookAt(x,2.65,-travel);
  scene.fog.near=distance+1;scene.fog.far=distance+23;
  camera.setViewOffset(width,height,(width/2-stageLayout.centerX)*studioBlend,(height/2-stageLayout.centerY)*studioBlend,width,height);
- sunlight.position.x=x-4;sunlight.target.position.set(x,0,0);
+ sunlight.position.x=-4;sunlight.position.z=6-travel;sunlight.target.position.set(0,0,-travel);
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  introHeart.rotation.y=reduced?.2:time*.25;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
@@ -252,8 +252,8 @@ async function start(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0xe5e0dc);scene.fog=new THREE.Fog(0xe5e0dc,12,32);camera=new THREE.PerspectiveCamera(39,width/height,.1,70);
  const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.06).texture;room.dispose();pmrem.dispose();scene.environmentIntensity=.8;
  scene.add(new THREE.HemisphereLight(0xffffff,0xd0bfbc,2));const sun=new THREE.DirectionalLight(0xfff4e8,3.2);sunlight=sun;sun.position.set(-4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;sun.shadow.bias=-.0004;scene.add(sun);scene.add(sun.target);
- const floor=new Reflector(new THREE.PlaneGeometry(200,90),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(44,-.07,0);scene.add(floor);
- const haze=mesh(new THREE.PlaneGeometry(200,90),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,44,-.055,0);haze.rotation.x=-Math.PI/2;
+ const floor=new Reflector(new THREE.PlaneGeometry(200,140),{color:0xdedbd7,textureWidth:width<700?256:512,textureHeight:width<700?256:512,clipBias:.003});floor.rotation.x=-Math.PI/2;floor.position.set(0,-.07,-44);scene.add(floor);
+ const haze=mesh(new THREE.PlaneGeometry(200,140),new THREE.MeshStandardMaterial({color:0xf3efeb,transparent:true,opacity:.55,roughness:.2,depthWrite:false}),scene,0,-.055,-44);haze.rotation.x=-Math.PI/2;
  populateWorld();restoreDesign();applyMaterial();updateFrame();updateSticker();buildChoices();bindUI();resize();smoothProgress=scrollProgress;animate();$('#loading').classList.add('ready');document.body.dataset.ready='true';
  }catch(error){console.error(error);$('#loading').classList.add('ready');$('#errorText').textContent='3D could not start. Use a current browser with hardware acceleration enabled.';$('#error').hidden=false;}
 }
