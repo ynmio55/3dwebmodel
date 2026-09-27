@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { chapterProgress, stageViewport } from './layout.js';
+import { chapterProgress, stageViewport, usesBottomDock } from './layout.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -178,13 +178,14 @@ function buildChoices(){
 }
 function updateStageLayout(){
  const panel=$('.design-panel').getBoundingClientRect();
- stageLayout=stageViewport({width,height,panel,headingBottom:$('.studio-heading').getBoundingClientRect().bottom,headerBottom:$('header').getBoundingClientRect().bottom,portrait:width<=700&&height>520});
+ stageLayout=stageViewport({width,height,panel,headingBottom:$('.studio-heading').getBoundingClientRect().bottom,headerBottom:$('header').getBoundingClientRect().bottom,portrait:usesBottomDock(width,height)});
 }
 function readScroll(){
  const sections=[...document.querySelectorAll('.chapter')];
  scrollProgress=chapterProgress(scrollY,sections.map(s=>s.offsetTop));
  $('#progress span').style.width=scrollProgress*25+'%';
- $('#world').style.touchAction=scrollProgress>3.8?'none':'pan-y';
+ // Keep vertical page scrolling available while horizontal drags turn the heart.
+ $('#world').style.touchAction='pan-y pinch-zoom';
  const active=scrollProgress>3.6?'#create':scrollProgress>.4?'#chapter1':'#home';
  document.querySelectorAll('nav a').forEach(a=>{if(a.getAttribute('href')===active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
  updateStageLayout();
@@ -204,9 +205,10 @@ function bindUI(){
  $('#colorPicker').addEventListener('input',e=>{state.color=e.target.value;applyMaterial();$('#selection').textContent='CUSTOM COLOR';$('#choices').querySelectorAll('.choice').forEach(b=>b.setAttribute('aria-pressed','false'));});
  $('#reset').addEventListener('click',()=>{Object.assign(state,defaults);targetRotation=.12;targetTilt=-.08;applyMaterial();updateFrame();updateSticker();buildChoices();});
  $('#frontView').addEventListener('click',()=>{targetRotation=.12;targetTilt=-.08;});
- const canvas=$('#world');canvas.addEventListener('pointerdown',e=>{if(scrollProgress<3.8)return;dragging=true;dragX=e.clientX;dragY=e.clientY;canvas.setPointerCapture(e.pointerId);});
- canvas.addEventListener('pointermove',e=>{if(!dragging)return;targetRotation+=(e.clientX-dragX)*.009;targetTilt=clamp(targetTilt+(e.clientY-dragY)*.006,-.7,.7);dragX=e.clientX;dragY=e.clientY;});
- for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>dragging=false);
+ const canvas=$('#world');let activePointer=null;
+ canvas.addEventListener('pointerdown',e=>{if(scrollProgress<3.8||!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;activePointer=e.pointerId;dragging=true;dragX=e.clientX;dragY=e.clientY;canvas.setPointerCapture(e.pointerId);});
+ canvas.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==activePointer)return;targetRotation+=(e.clientX-dragX)*.009;if(e.pointerType!=='touch')targetTilt=clamp(targetTilt+(e.clientY-dragY)*.006,-.7,.7);dragX=e.clientX;dragY=e.clientY;});
+ for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>{if(e.pointerId===activePointer){dragging=false;activePointer=null;}});
  canvas.addEventListener('keydown',e=>{if(scrollProgress<3.8)return;if(e.key==='ArrowLeft')targetRotation-=.15;else if(e.key==='ArrowRight')targetRotation+=.15;else if(e.key==='ArrowUp')targetTilt=clamp(targetTilt-.1,-.7,.7);else if(e.key==='ArrowDown')targetTilt=clamp(targetTilt+.1,-.7,.7);else return;e.preventDefault();});
  $('#finish').addEventListener('click',()=>{
   renderer.render(scene,camera);
