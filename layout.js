@@ -1,4 +1,7 @@
 // Keep navigation and camera placement aligned with the measured page layout.
+export function usesBottomDock(width, height) {
+  return width <= 700 && !(height <= 520 && width > height);
+}
 export function chapterProgress(scrollTop, offsets) {
   if (!offsets.length || scrollTop <= offsets[0]) return 0;
   for (let i = 0; i < offsets.length - 1; i++) {
