@@ -432,8 +432,12 @@ function animate(){
   heroIntroGlass.material.opacity=THREE.MathUtils.damp(heroIntroGlass.material.opacity,targetIntro*.88,5,dt);
   heroIntroGlass.visible=heroIntroGlass.material.opacity>.015;
  }
- const burst=clamp((smoothProgress-.08)/.45,0,1);mirrorGroup.visible=burst<.65;mirrorGroup.scale.setScalar(1-burst*.2);
- for(const s of mirrorShards){s.mesh.visible=burst>.03&&burst<.99;s.mesh.position.set(s.x+Math.sin(s.phase)*burst*3,s.y+Math.cos(s.phase)*burst*2,s.z+burst*4);s.mesh.rotation.set(burst*s.phase,burst*s.phase*.6,burst);}
+ const burst=clamp((smoothProgress-.08)/.45,0,1);
+ // Keep the hero mirror clean while transitioning out. The old tetrahedron
+ // shard burst created dark square/zig-zag fragments around the star.
+ mirrorGroup.visible=burst<.72;
+ mirrorGroup.scale.setScalar(1-burst*.12);
+ for(const s of mirrorShards){s.mesh.visible=false;}
  for(const p of petals){p.mesh.visible=studioBlend<.8;p.mesh.position.set(p.x+(reduced?0:Math.sin(time*.3+p.phase)*.5),reduced?p.y:((p.y-time*p.speed)%7+7)%7,p.z);p.mesh.rotation.set(p.phase+time*.6,p.phase+time*.4,p.phase+time*.3);}
 
  for(let i=0;i<modelGroups.length;i++){
