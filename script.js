@@ -257,7 +257,24 @@ function restoreDesign(){
  const [m,c,f,s]=parts;if(/^\d+$/.test(m)&&+m<8)state.material=+m;if(/^[0-9a-f]{6}$/i.test(c))state.color='#'+c;if(/^\d+$/.test(f)&&+f<8)state.frame=+f;if(/^\d+$/.test(s)&&+s<8)state.sticker=+s;
 }
 function designURL(){const url=new URL(location.href);url.searchParams.set('design',`${state.material}.${state.color.slice(1)}.${state.frame}.${state.sticker}`);url.hash='create';return url.href;}
+function setupStoryIntro(){
+ const intro=$('#storyIntro');
+ const dismiss=$('#dismissIntro');
+ if(!intro||!dismiss)return;
+ let timer;
+ const hide=()=>{
+  if(intro.classList.contains('is-hidden'))return;
+  intro.classList.add('is-hidden');
+  clearTimeout(timer);
+ };
+ dismiss.addEventListener('click',hide);
+ intro.addEventListener('click',e=>{if(e.target===intro)hide();});
+ addEventListener('scroll',()=>{if(scrollY>80)hide();},{passive:true,once:true});
+ timer=setTimeout(hide,5500);
+}
+
 function bindUI(){
+ setupStoryIntro();
  document.querySelectorAll('[data-finish]').forEach(b=>b.addEventListener('click',()=>{state.material=Number(b.dataset.finish);state.color=choices.material[state.material][1];category='material';applyMaterial();buildChoices();}));
  const tabs=[...document.querySelectorAll('[data-category]')];
  tabs.forEach((b,index)=>{
