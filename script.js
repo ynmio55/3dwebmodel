@@ -68,20 +68,26 @@ function makeHeroIntroTexture(){
  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
  ctx.textAlign='center';ctx.textBaseline='middle';
  const line=(text,y,font,color)=>{ctx.font=font;ctx.fillStyle=color;ctx.fillText(text,canvas.width/2,y);};
- line('THA RAE CHRISTMAS STAR PARADE',210,'700 30px Arial','#a17b32');
- line('In Tha Rae,',330,'58px Georgia','#3b3040');
- line('the Christmas Star Parade',405,'48px Georgia','#3b3040');
- line('celebrates the birth of Jesus.',475,'45px Georgia','#3b3040');
- line('Inspired by the Star of Bethlehem.',1270,'600 30px Arial','#a17b32');
- const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.needsUpdate=true;return tex;
+
+ // Keep all copy inside the oval UV area. The star sits in the middle,
+ // so the intro reads above and below it like lettering printed behind glass.
+ line('THA RAE CHRISTMAS STAR PARADE',470,'700 25px Arial','#9a7736');
+ line('In Tha Rae,',535,'46px Georgia','#3b3040');
+ line('the Christmas Star Parade',590,'39px Georgia','#3b3040');
+ line('celebrates the birth of Jesus.',642,'35px Georgia','#3b3040');
+ line('Inspired by the Star of Bethlehem.',1060,'600 25px Arial','#9a7736');
+
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.needsUpdate=true;
+ return tex;
 }
 function makeMirror(parent){
  const g=new THREE.Group();g.position.set(0,2.7,0);parent.add(g);
  for(const [rx,ry,r] of [[1.12,1.62,.065],[1.22,1.74,.045],[1.01,1.52,.022]]){const p=[];for(let i=0;i<100;i++){const t=i/100*Math.PI*2;p.push(new THREE.Vector3(Math.cos(t)*rx,Math.sin(t)*ry,0));}tube(p,r,g,gold,true);}
  heroIntroTexture=makeHeroIntroTexture();
- const introMat=new THREE.MeshBasicMaterial({map:heroIntroTexture,transparent:true,opacity:.88,depthWrite:false,side:THREE.DoubleSide});
+ const introMat=new THREE.MeshBasicMaterial({map:heroIntroTexture,transparent:true,opacity:.96,depthWrite:false,depthTest:true,side:THREE.DoubleSide});
  heroIntroGlass=mesh(new THREE.CircleGeometry(1,64),introMat,g,0,0,-.12);heroIntroGlass.scale.set(1.02,1.50,1);heroIntroGlass.castShadow=false;heroIntroGlass.receiveShadow=false;
- const mirrorMat=new THREE.MeshPhysicalMaterial({color:0xd8c9e0,metalness:.18,roughness:.16,iridescence:.65,iridescenceIOR:1.35,transparent:true,opacity:.62,transmission:.10,thickness:.35,clearcoat:.75,clearcoatRoughness:.1,side:THREE.DoubleSide,depthWrite:false});
+ const mirrorMat=new THREE.MeshPhysicalMaterial({color:0xd8c9e0,metalness:.14,roughness:.18,iridescence:.5,iridescenceIOR:1.3,transparent:true,opacity:.48,transmission:.16,thickness:.28,clearcoat:.72,clearcoatRoughness:.12,side:THREE.DoubleSide,depthWrite:false});
  const oval=mesh(new THREE.CircleGeometry(1,64),mirrorMat,g,0,0,-.06);oval.scale.set(1.08,1.60,1);oval.castShadow=false;oval.receiveShadow=false;
  for(let side of [-1,1])for(let j=0;j<9;j++){const a=-.9+j*.23;leaf(g,side*(.72+Math.sin(a)*.37),1.42+Math.cos(a)*.30,.07,side*(a-.6),.18);leaf(g,side*(.65+Math.sin(a)*.35),-1.52-Math.cos(a)*.18,.07,side*(a+2),.16);}
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;leaf(g,Math.cos(a)*.20,1.93+Math.sin(a)*.20,.05,-a+Math.PI/2,.19);}sphere(g,0,1.93,.1,.11,.11,.08,gold);
