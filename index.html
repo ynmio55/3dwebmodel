@@ -13,7 +13,14 @@
 <div id="error" hidden><h2>Your story needs 3D.</h2><p id="errorText">Please enable hardware acceleration and reload.</p><button onclick="location.reload()">TRY AGAIN</button></div>
 <header class="site-header"><a class="wordmark" href="#home">follow<span>the star</span><small>THA RAE · SAKON NAKHON</small></a><nav aria-label="Main navigation"><a href="#home">HOME</a><a href="#chapter1">THE STORY</a><a href="#create">CREATE YOUR STAR</a></nav><button id="sound" aria-pressed="false">SOUND OFF <span>⌁</span></button></header>
 <main>
-<section id="home" class="chapter hero"><div class="hero-title" aria-label="The Story"><span class="script-word">Follow the</span><span>ST</span><span class="mirror-space"></span><span>AR</span></div><div class="hero-intro" aria-label="Tha Rae Christmas Star Parade introduction"><span class="hero-intro-kicker">THA RAE CHRISTMAS STAR PARADE</span><strong>In Tha Rae, the Christmas Star Parade celebrates the birth of Jesus.</strong><span>Inspired by the Star of Bethlehem.</span></div><div class="hero-bottom"><p>Every star holds a story beyond its beauty.</p><a class="button" href="#chapter1">FOLLOW THE STORY ✦</a></div><a class="skip" href="#create">SKIP TO YOUR STAR ↗</a></section>
+<section id="home" class="chapter hero"><div class="hero-title" aria-label="The Story"><span class="script-word">Follow the</span><span>ST</span><span class="mirror-space"></span><span>AR</span></div><div class="hero-intro" id="storyIntro" aria-label="Tha Rae Christmas Star Parade introduction">
+  <div class="hero-intro-card">
+    <span class="hero-intro-kicker">THA RAE CHRISTMAS STAR PARADE</span>
+    <strong>In Tha Rae, the Christmas Star Parade celebrates the birth of Jesus.</strong>
+    <span>Inspired by the Star of Bethlehem.</span>
+    <button type="button" id="dismissIntro">TAP TO BEGIN ↓</button>
+  </div>
+</div><div class="hero-bottom"><p>Every star holds a story beyond its beauty.</p><a class="button" href="#chapter1">FOLLOW THE STORY ✦</a></div><a class="skip" href="#create">SKIP TO YOUR STAR ↗</a></section>
 <section id="chapter1" class="chapter"><p class="caption">Beyond the lights of Tha Rae lies a story of faith.<br>It begins with Mary and Joseph’s journey to Bethlehem.</p><a class="continue" href="#chapter2">TAP A STAR OR SCROLL TO DISCOVER ↓</a></section>
 <section id="chapter2" class="chapter"><p class="caption">In the Nativity story, a star guides the way to the infant Jesus.<br>Its light becomes a symbol of guidance and hope.</p><a class="continue" href="#chapter3">FOLLOW THE STAR TO THA RAE ↓</a></section>
 <section id="chapter3" class="chapter"><p class="caption">Look a little closer.<br>This little star is more than a decoration,<br>it’s a symbol of faith, hope, and love.</p><a class="continue" href="#create">CREATE YOUR OWN MEANINGFUL STAR ✦</a></section>
