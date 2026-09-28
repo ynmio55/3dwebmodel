@@ -85,16 +85,17 @@ function makeMirror(parent){
  const g=new THREE.Group();g.position.set(0,2.7,0);parent.add(g);
  for(const [rx,ry,r] of [[1.12,1.62,.065],[1.22,1.74,.045],[1.01,1.52,.022]]){const p=[];for(let i=0;i<100;i++){const t=i/100*Math.PI*2;p.push(new THREE.Vector3(Math.cos(t)*rx,Math.sin(t)*ry,0));}tube(p,r,g,gold,true);}
  heroIntroTexture=makeHeroIntroTexture();
- const introMat=new THREE.MeshBasicMaterial({map:heroIntroTexture,transparent:true,opacity:.96,depthWrite:false,depthTest:true,side:THREE.DoubleSide});
- heroIntroGlass=mesh(new THREE.CircleGeometry(1,64),introMat,g,0,0,-.12);heroIntroGlass.scale.set(1.02,1.50,1);heroIntroGlass.castShadow=false;heroIntroGlass.receiveShadow=false;
+ const introMat=new THREE.MeshBasicMaterial({map:heroIntroTexture,transparent:true,opacity:.96,depthWrite:false,depthTest:true,side:THREE.DoubleSide,premultipliedAlpha:true});
+ heroIntroGlass=mesh(new THREE.CircleGeometry(1,64),introMat,g,0,0,-.12);heroIntroGlass.scale.set(1.02,1.50,1);heroIntroGlass.castShadow=false;heroIntroGlass.receiveShadow=false;heroIntroGlass.renderOrder=0;
  const mirrorMat=new THREE.MeshPhysicalMaterial({color:0xd8c9e0,metalness:.14,roughness:.18,iridescence:.5,iridescenceIOR:1.3,transparent:true,opacity:.48,transmission:.16,thickness:.28,clearcoat:.72,clearcoatRoughness:.12,side:THREE.DoubleSide,depthWrite:false});
- const oval=mesh(new THREE.CircleGeometry(1,64),mirrorMat,g,0,0,-.06);oval.scale.set(1.08,1.60,1);oval.castShadow=false;oval.receiveShadow=false;
+ const oval=mesh(new THREE.CircleGeometry(1,64),mirrorMat,g,0,0,-.06);oval.scale.set(1.08,1.60,1);oval.castShadow=false;oval.receiveShadow=false;oval.renderOrder=1;
  for(let side of [-1,1])for(let j=0;j<9;j++){const a=-.9+j*.23;leaf(g,side*(.72+Math.sin(a)*.37),1.42+Math.cos(a)*.30,.07,side*(a-.6),.18);leaf(g,side*(.65+Math.sin(a)*.35),-1.52-Math.cos(a)*.18,.07,side*(a+2),.16);}
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;leaf(g,Math.cos(a)*.20,1.93+Math.sin(a)*.20,.05,-a+Math.PI/2,.19);}sphere(g,0,1.93,.1,.11,.11,.08,gold);
  const ornament=mesh(new THREE.TorusKnotGeometry(.21,.026,64,8,2,3),gold,g,0,-1.96,.08);ornament.scale.set(1,.65,.25);
  introHeart=mesh(heartGeometry,new THREE.MeshPhysicalMaterial({color:0xe6c97f,metalness:.42,roughness:.18,clearcoat:1,clearcoatRoughness:.08}),g,0,.08,.32);
  introHeart.scale.setScalar(.68);
  introHeart.castShadow=false;
+ introHeart.renderOrder=3;
  return g;
 }
 let sculptureReady;
@@ -152,15 +153,19 @@ async function loadUserModels(){
  floatingStar(modelGroups[3],0,3.45,0,0xd4aa4f,.38);
  for(const star of [introHeart,...storyStars]){star.geometry=heartGeometry;Object.assign(star.material,{map:crystalMap,vertexColors:true,metalness:.32,roughness:.24,clearcoat:1,clearcoatRoughness:.12,transmission:.20,ior:1.46,thickness:.85,flatShading:true,bumpMap:crystalMap,bumpScale:.006,envMapIntensity:1.5});star.material.needsUpdate=true;}
  introHeart.material.color.set(0xe6c97f);
- introHeart.material.metalness=.46;
- introHeart.material.roughness=.16;
+ introHeart.material.metalness=.42;
+ introHeart.material.roughness=.18;
  introHeart.material.clearcoat=1;
- introHeart.material.clearcoatRoughness=.06;
- introHeart.material.transmission=.05;
- introHeart.material.thickness=.35;
- introHeart.material.envMapIntensity=2;
+ introHeart.material.clearcoatRoughness=.07;
+ introHeart.material.transmission=0;
+ introHeart.material.thickness=0;
+ introHeart.material.transparent=false;
+ introHeart.material.opacity=1;
+ introHeart.material.depthWrite=true;
+ introHeart.material.depthTest=true;
+ introHeart.material.envMapIntensity=1.8;
  introHeart.material.emissive.set(0x5a3b08);
- introHeart.material.emissiveIntensity=.035;
+ introHeart.material.emissiveIntensity=.025;
  introHeart.material.needsUpdate=true;
 }
 function populateWorld(){
