@@ -296,9 +296,6 @@ function bindUI(){
  $('#reset').addEventListener('click',()=>{Object.assign(state,defaults);targetRotation=.12;targetTilt=-.08;applyMaterial();updateFrame();updateSticker();buildChoices();});
  $('#frontView').addEventListener('click',()=>{targetRotation=.12;targetTilt=-.08;});
  const canvas=$('#world');let activePointer=null;
- canvas.addEventListener('pointerup',e=>{
-  if(scrollProgress<.45&&!heroIntroDismissed){heroIntroDismissed=true;}
- },{passive:true});
  let storyDown=null;canvas.addEventListener('pointerdown',e=>{storyDown={x:e.clientX,y:e.clientY};});canvas.addEventListener('pointerup',e=>{if(scrollProgress>=3.8||!storyDown||Math.hypot(e.clientX-storyDown.x,e.clientY-storyDown.y)>12)return;const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(e.clientX/width*2-1,-e.clientY/height*2+1),camera);const hits=ray.intersectObjects([introHeart,...storyStars].filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;}));if(hits.length)document.querySelectorAll('.chapter')[Math.min(4,Math.round(scrollProgress)+1)].scrollIntoView({behavior:reduced?'instant':'smooth'});});
  canvas.addEventListener('pointerdown',e=>{if(scrollProgress<3.8||!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;activePointer=e.pointerId;dragging=true;dragX=e.clientX;dragY=e.clientY;canvas.setPointerCapture(e.pointerId);});
  canvas.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==activePointer)return;targetRotation+=(e.clientX-dragX)*.009;if(e.pointerType!=='touch')targetTilt=clamp(targetTilt+(e.clientY-dragY)*.006,-.7,.7);dragX=e.clientX;dragY=e.clientY;});
@@ -425,11 +422,11 @@ function animate(){
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
  if(heroIntroGlass){
-  const elapsed=(performance.now()-heroIntroStartedAt)/1000;
-  const timeFade=1-THREE.MathUtils.smoothstep(elapsed,4.2,6.2);
-  const scrollFade=1-THREE.MathUtils.smoothstep(smoothProgress,.05,.42);
-  const targetIntro=heroIntroDismissed?0:Math.min(timeFade,scrollFade);
-  heroIntroGlass.material.opacity=THREE.MathUtils.damp(heroIntroGlass.material.opacity,targetIntro*.88,5,dt);
+  // Keep the intro copy visible on HOME. It only fades once the user
+  // actually leaves the first scene, so it never disappears by itself.
+  const scrollFade=1-THREE.MathUtils.smoothstep(smoothProgress,.18,.58);
+  const targetIntro=heroIntroDismissed?0:scrollFade;
+  heroIntroGlass.material.opacity=THREE.MathUtils.damp(heroIntroGlass.material.opacity,targetIntro*.96,5,dt);
   heroIntroGlass.visible=heroIntroGlass.material.opacity>.015;
  }
  const burst=clamp((smoothProgress-.08)/.45,0,1);
