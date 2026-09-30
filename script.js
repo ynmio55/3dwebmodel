@@ -28,8 +28,7 @@ const marble = new THREE.MeshStandardMaterial({color:0xf0eae2,roughness:.52,meta
 const gold = new THREE.MeshStandardMaterial({color:0xcfb37a,metalness:.8,roughness:.27});
 const silver = new THREE.MeshStandardMaterial({color:0xe5e5e8,metalness:.9,roughness:.2});
 const pearl = new THREE.MeshPhysicalMaterial({color:0xfff6e3,roughness:.23,metalness:.15,clearcoat:1});
-let heartGeometry, facetGeometry, mirrorGroup, introHeart, heroIntroGlass, heroIntroTexture, cage, letter;
-let heroIntroDismissed=false, heroIntroStartedAt=performance.now();
+let heartGeometry, facetGeometry, mirrorGroup, introHeart, cage, letter;
 function mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function sphere(parent,x,y,z,sx,sy,sz,material=marble){const m=mesh(new THREE.SphereGeometry(1,16,12),material,parent,x,y,z);m.scale.set(sx,sy,sz);return m;}
 function tube(points,radius,parent,material=gold,closed=false){return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points,closed),Math.max(16,points.length*4),radius,6,closed),material,parent);}
@@ -63,32 +62,11 @@ function column(parent,x,z,h=4,broken=false){
 function island(parent,radius=2){mesh(new THREE.CylinderGeometry(radius,radius*1.07,.14,9),marble,parent,0,.04,0);for(let i=0;i<15;i++){const a=i*2.4,r=radius+.3+(i%3)*.2;const rock=mesh(new THREE.DodecahedronGeometry(.11+(i%4)*.05,0),marble,parent,Math.sin(a)*r,.06,Math.cos(a)*r);rock.scale.y=.55;rock.rotation.set(i,i*.7,i*.4);}}
 function leaf(parent,x,y,z,angle,size=.22){const m=sphere(parent,x,y,z,size*.38,size,size*.14,gold);m.rotation.z=angle;return m;}
 
-function makeHeroIntroTexture(){
- const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1536;
- const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.textAlign='center';ctx.textBaseline='middle';
- const line=(text,y,font,color)=>{ctx.font=font;ctx.fillStyle=color;ctx.fillText(text,canvas.width/2,y);};
-
- // Keep all copy inside the oval UV area. The star sits in the middle,
- // so the intro reads above and below it like lettering printed behind glass.
- line('THA RAE CHRISTMAS STAR PARADE',470,'700 25px Arial','#9a7736');
- line('In Tha Rae,',535,'46px Georgia','#3b3040');
- line('the Christmas Star Parade',590,'39px Georgia','#3b3040');
- line('celebrates the birth of Jesus.',642,'35px Georgia','#3b3040');
- line('Inspired by the Star of Bethlehem.',1060,'600 25px Arial','#9a7736');
-
- const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
- tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.needsUpdate=true;
- return tex;
-}
 function makeMirror(parent){
  const g=new THREE.Group();g.position.set(0,2.7,0);parent.add(g);
  for(const [rx,ry,r] of [[1.12,1.62,.065],[1.22,1.74,.045],[1.01,1.52,.022]]){const p=[];for(let i=0;i<100;i++){const t=i/100*Math.PI*2;p.push(new THREE.Vector3(Math.cos(t)*rx,Math.sin(t)*ry,0));}tube(p,r,g,gold,true);}
- heroIntroTexture=makeHeroIntroTexture();
- const introMat=new THREE.MeshBasicMaterial({map:heroIntroTexture,transparent:true,opacity:.96,depthWrite:false,depthTest:true,side:THREE.DoubleSide,premultipliedAlpha:true});
- heroIntroGlass=mesh(new THREE.CircleGeometry(1,64),introMat,g,0,0,-.12);heroIntroGlass.scale.set(1.02,1.50,1);heroIntroGlass.castShadow=false;heroIntroGlass.receiveShadow=false;heroIntroGlass.renderOrder=0;
- const mirrorMat=new THREE.MeshPhysicalMaterial({color:0xd8c9e0,metalness:.14,roughness:.18,iridescence:.5,iridescenceIOR:1.3,transparent:true,opacity:.48,transmission:.16,thickness:.28,clearcoat:.72,clearcoatRoughness:.12,side:THREE.DoubleSide,depthWrite:false});
- const oval=mesh(new THREE.CircleGeometry(1,64),mirrorMat,g,0,0,-.06);oval.scale.set(1.08,1.60,1);oval.castShadow=false;oval.receiveShadow=false;oval.renderOrder=1;
+ const mirrorMat=new THREE.MeshPhysicalMaterial({color:0xd8c9e0,metalness:.4,roughness:.1,iridescence:1,iridescenceIOR:1.5,side:THREE.DoubleSide});
+ const oval=mesh(new THREE.CircleGeometry(1,64),mirrorMat,g,0,0,-.06);oval.scale.set(1.08,1.60,1);
  for(let side of [-1,1])for(let j=0;j<9;j++){const a=-.9+j*.23;leaf(g,side*(.72+Math.sin(a)*.37),1.42+Math.cos(a)*.30,.07,side*(a-.6),.18);leaf(g,side*(.65+Math.sin(a)*.35),-1.52-Math.cos(a)*.18,.07,side*(a+2),.16);}
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;leaf(g,Math.cos(a)*.20,1.93+Math.sin(a)*.20,.05,-a+Math.PI/2,.19);}sphere(g,0,1.93,.1,.11,.11,.08,gold);
  const ornament=mesh(new THREE.TorusKnotGeometry(.21,.026,64,8,2,3),gold,g,0,-1.96,.08);ornament.scale.set(1,.65,.25);
@@ -421,14 +399,6 @@ function animate(){
 
  heart.rotation.y=THREE.MathUtils.damp(heart.rotation.y,targetRotation,9,dt);heart.rotation.x=THREE.MathUtils.damp(heart.rotation.x,targetTilt,9,dt);heart.position.y=2.65+(reduced?0:Math.sin(time*.85)*.065);
  storyStars.forEach((m,i)=>{m.rotation.y=reduced?0:Math.sin(time*.5+i)*.25;});introHeart.rotation.y=reduced?.2:Math.sin(time*.5)*.3;letter.rotation.set(.1,Math.sin(time*.5)*.12,-.15);cage.rotation.y=Math.sin(time*.15)*.04;
- if(heroIntroGlass){
-  // Keep the intro copy visible on HOME. It only fades once the user
-  // actually leaves the first scene, so it never disappears by itself.
-  const scrollFade=1-THREE.MathUtils.smoothstep(smoothProgress,.18,.58);
-  const targetIntro=heroIntroDismissed?0:scrollFade;
-  heroIntroGlass.material.opacity=THREE.MathUtils.damp(heroIntroGlass.material.opacity,targetIntro*.96,5,dt);
-  heroIntroGlass.visible=heroIntroGlass.material.opacity>.015;
- }
  const burst=clamp((smoothProgress-.08)/.45,0,1);
  // Keep the hero mirror clean while transitioning out. The old tetrahedron
  // shard burst created dark square/zig-zag fragments around the star.
